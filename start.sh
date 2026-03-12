@@ -7,9 +7,9 @@
 set -e  # Para o script se qualquer comando falhar
 
 echo ">>> [1/3] Instalando dependências de sistema do Playwright..."
-# playwright install-deps instala as libs nativas do Linux
-# necessárias para o Chromium funcionar em ambiente headless
-playwright install-deps chromium
+# playwright install-deps pode falhar se não houver permissão de root (comum no Railway).
+# Usamos '|| true' para que o deploy continue caso as libs já existam.
+playwright install-deps chromium || true
 
 echo ">>> [2/3] Instalando o Chromium..."
 playwright install chromium

@@ -1,10 +1,6 @@
 """
-miner.py – Núcleo de automação do LinkMineer (Versão Ultra Diagnóstica).
-
-Estratégia:
-  - Logs granulares para cada ação (navegação, injeção, raspagem).
-  - Captura e exibição de erros reais (sem silent fail).
-  - Sanitização de cookies para evitar erros de SameSite.
+miner.py – Versão 4.0 (Ultra Robust Debug).
+Focado em visibilidade total do processo e correção de erros de ambiente (Railway/Local).
 """
 
 import json
@@ -12,26 +8,33 @@ import os
 import time
 import queue
 import threading
-import datetime
+import sys
 from urllib.parse import urlparse, urlunparse
 
+# Configurações de ambiente
 _IS_SERVER = os.environ.get("RAILWAY_ENVIRONMENT") is not None or \
              os.environ.get("PORT") is not None
 HEADLESS = os.environ.get("PLAYWRIGHT_HEADLESS", "true" if _IS_SERVER else "false").lower() == "true"
 
 # -----------------------------------------------------------------------
-# Helpers
+# Helpers de Sistema e Log
 # -----------------------------------------------------------------------
 
 def _log(q: queue.Queue, message: str, progress: float = None):
+    """Envia log para o UI do Streamlit e para o console (Railway Logs)."""
     data = {"message": message}
     if progress is not None:
         data["progress"] = progress
     q.put(data)
+    # Print para o log do Railway (Terminal)
+    print(f"[LOG] {message}", flush=True)
 
 def _clean_url(url: str) -> str:
-    p = urlparse(url)
-    return urlunparse((p.scheme, p.netloc, p.path, "", "", ""))
+    try:
+        p = urlparse(url)
+        return urlunparse((p.scheme, p.netloc, p.path, "", "", ""))
+    except:
+        return url
 
 def _append_param(url: str, key: str, value: str) -> str:
     sep = "&" if "?" in url else "?"
@@ -43,107 +46,94 @@ def _sanitize_cookies(cookies):
     for c in cookies:
         if not isinstance(c, dict): continue
         cookie = c.copy()
-        ss = str(cookie.get("sameSite", "")).capitalize()
+        raw_ss = str(cookie.get("sameSite", ""))
+        ss = raw_ss.capitalize()
         if ss not in valid_samesite:
-            if ss == "No_restriction":
+            if ss == "No_restriction" or raw_ss == "no_restriction":
                 cookie["sameSite"] = "None"
                 cookie["secure"] = True
             else:
                 cookie.pop("sameSite", None)
         else:
             cookie["sameSite"] = ss
-        
         if "name" in cookie and "value" in cookie and "domain" in cookie:
             sanitized.append(cookie)
     return sanitized
 
 def _load_cookies(page, q: queue.Queue, cookies_json: str, marketplace: str):
     try:
-        _log(q, f"{marketplace}: Analisando cookies...")
+        _log(q, f"{marketplace}: Analisando JSON de cookies...")
         cookies = json.loads(cookies_json)
         if isinstance(cookies, list):
             sanitized = _sanitize_cookies(cookies)
             page.context.add_cookies(sanitized)
-            _log(q, f"✅ {marketplace}: {len(sanitized)} cookies injetados.")
+            _log(q, f"✅ {marketplace}: {len(sanitized)} cookies injetados com sucesso.")
             return True
-        else:
-            _log(q, f"⚠️ {marketplace}: Formato de cookies inválido (não é uma lista).")
+        _log(q, f"⚠️ {marketplace}: Cookies devem ser uma lista JSON [{{...}}].")
     except Exception as e:
-        _log(q, f"❌ {marketplace}: Erro ao carregar cookies: {str(e)[:100]}")
+        _log(q, f"❌ {marketplace}: Erro ao processar cookies: {str(e)[:100]}")
     return False
 
 def _check_blocks(page):
     title = page.title().lower()
     content = page.content().lower()
-    blocks = ["captcha", "robot", "human verification", "bot detection", "access denied", "403 forbidden", "press and hold"]
+    blocks = ["captcha", "robot", "human verification", "bot detection", "denied", "403 forbidden", "press and hold"]
     for b in blocks:
         if b in title or b in content:
             return f"Bloqueio detectado: {b}"
-    if "amazon.com.br/errors/validatecaptcha" in page.url:
-        return "Amazon Captcha"
+    if "/errors/validatecaptcha" in page.url:
+        return "Amazon Captcha detectado"
     return None
 
 # -----------------------------------------------------------------------
-# Demo Mode
+# Demo Mode Logic
 # -----------------------------------------------------------------------
 
-DEMO_PRODUCTS = {
-    "Amazon": ["https://www.amazon.com.br/dp/B0C4J5L9QP", "https://www.amazon.com.br/dp/B09G3GNY2N"],
-    "Mercado Livre": ["https://www.mercadolivre.com.br/iphone-15/p/MLB27580088", "https://www.mercadolivre.com.br/air-fryer/p/MLB21765432"],
-    "Shopee": ["https://shopee.com.br/produto-ex-i.123456.789012", "https://shopee.com.br/produto-ex-i.234567.890123"],
-}
-
 def run_mining_demo(config: dict, q: queue.Queue):
+    _log(q, "Iniciando MODO DEMO (Simulação)...", 0.05)
+    time.sleep(1)
     qtd = config.get("qtd_produtos", 5)
     active = [m for m in ["Amazon", "Mercado Livre", "Shopee"] if config["marketplaces"][m]["active"]]
-    total = qtd * len(active) if active else 1
-    done = 0
+    
+    demo_links = {
+        "Amazon": ["https://www.amazon.com.br/dp/B0C4J5L9QP"],
+        "Mercado Livre": ["https://www.mercadolivre.com.br/p/MLB27580088"],
+        "Shopee": ["https://shopee.com.br/produto-i.123.456"]
+    }
 
-    for m in active:
-        cfg = config["marketplaces"][m]
-        items = DEMO_PRODUCTS.get(m, [])
-        for i, link in enumerate(items[:qtd]):
-            time.sleep(0.3)
-            aff_link = link
-            if m == "Amazon": 
-                tag = cfg.get("tag", "").strip() or "demo-20"
-                aff_link = _append_param(link, "tag", tag)
-            elif m == "Mercado Livre":
-                track = cfg.get("tracking_id", "").strip() or "demo-ml"
-                if "=" in track: aff_link = f"{link}{'&' if '?' in link else '?'}{track}"
-                else: aff_link = _append_param(link, "tracking_id", track)
-            else: # Shopee
-                aff_id = cfg.get("affiliate_id", "").strip() or "0"
-                aff_link = _append_param(link, "aff_id", aff_id)
-                aff_link = _append_param(aff_link, "aff_platform", "affiliate")
-            
-            done += 1
-            _log(q, f"[DEMO] {m}: Item {i+1} pronto", done/total)
-            q.put({"result": {"marketplace": m, "link_produto": link, "link_afiliado": aff_link}})
+    for idx, m in enumerate(active):
+        _log(q, f"[DEMO] Minerando {m}...", (idx+1)/len(active))
+        for i in range(qtd):
+            links = demo_links.get(m, ["https://exemplo.com/p"])
+            base = links[0]
+            aff = base + "?aff_id=demo"
+            q.put({"result": {"marketplace": m, "link_produto": base, "link_afiliado": aff}})
+            time.sleep(0.2)
+    
+    _log(q, "✅ MODO DEMO concluído.", 1.0)
     q.put({"done": True})
 
 # -----------------------------------------------------------------------
-# Core Mining Logic
+# Scraper Genérico
 # -----------------------------------------------------------------------
 
-def mine_generic(page, marketplace: str, source_urls: list, selector: str, config: dict, q: queue.Queue, p_start: float, p_end: float):
+def mine_generic(page, marketplace: str, source_urls: list, selectors: list, config: dict, q: queue.Queue, ps: float, pe):
     cfg = config["marketplaces"][marketplace]
     qtd = config.get("qtd_produtos", 5)
     
-    _log(q, f"{marketplace}: Iniciando mineração...", p_start)
+    _log(q, f"{marketplace}: Preparando motor...", ps)
     
     if cfg.get("cookies"):
         _load_cookies(page, q, cfg["cookies"], marketplace)
 
-    product_links = []
+    all_links = []
     for url in source_urls:
-        if len(product_links) >= qtd: break
+        if len(all_links) >= qtd: break
         
         try:
-            _log(q, f"{marketplace}: Acessando {url}...")
-            page.goto(url, timeout=45000, wait_until="domcontentloaded")
-            
-            # Aguarda um pouco mais em caso de CSR (Shopee)
+            _log(q, f"{marketplace}: Navegando → {url}")
+            # Timeout maior e wait_until relaxado para evitar travar no Railway
+            page.goto(url, timeout=60000, wait_until="domcontentloaded")
             page.wait_for_timeout(3000)
             
             block = _check_blocks(page)
@@ -151,70 +141,74 @@ def mine_generic(page, marketplace: str, source_urls: list, selector: str, confi
                 _log(q, f"⚠️ {marketplace}: {block}")
                 continue
             
-            _log(q, f"{marketplace}: Buscando produtos...")
-            links = page.eval_on_selector_all(selector, 'els => els.map(e => e.href)')
+            _log(q, f"{marketplace}: Página carregada. Buscando produtos...")
             
-            # Filtros específicos
-            if marketplace == "Amazon":
-                found = [_clean_url(l) for l in links if "/dp/" in l]
-            elif marketplace == "Mercado Livre":
-                found = [_clean_url(l) for l in links if "mercadolivre.com.br" in l]
-            else: # Shopee
-                found = [_clean_url(l) for l in links if "-i." in l]
+            found_this_url = []
+            for sel in selectors:
+                _log(q, f"{marketplace}: Testando seletor '{sel}'...")
+                links = page.eval_on_selector_all(sel, 'els => els.map(e => e.href)')
                 
-            if found:
-                _log(q, f"✅ {marketplace}: {len(found)} links encontrados.")
-                product_links.extend(found)
-            else:
-                _log(q, f"ℹ️ {marketplace}: Nenhum link encontrado com o seletor atual.")
+                # Filtros por marketplace
+                valid = []
+                if marketplace == "Amazon": valid = [l for l in links if "/dp/" in l]
+                elif marketplace == "Mercado Livre": valid = [l for l in links if "mercadolivre.com.br" in l and "/p/" in l or "/MLB-" in l]
+                else: valid = [l for l in links if "-i." in l]
                 
+                if valid:
+                    _log(q, f"✅ {marketplace}: {len(valid)} links encontrados com '{sel}'.")
+                    found_this_url.extend([_clean_url(l) for l in valid])
+                    break # Se achou links com um seletor, não precisa dos outros nesta URL
+            
+            all_links.extend(found_this_url)
+            
         except Exception as e:
-            _log(q, f"❌ {marketplace}: Erro ao acessar URL: {str(e)[:100]}")
+            _log(q, f"❌ {marketplace}: Erro na URL {url}: {str(e)[:100]}")
 
-    product_links = list(dict.fromkeys(product_links))[:qtd]
+    all_links = list(dict.fromkeys(all_links))[:qtd]
     
-    if not product_links:
-        _log(q, f"⚠️ {marketplace}: Não foi possível coletar nenhum link.")
+    if not all_links:
+        _log(q, f"⚠️ {marketplace}: Nenhum produto encontrado.", pe)
         return
 
-    # Geração dos links de afiliado
-    for i, link in enumerate(product_links):
-        aff_link = link
+    # Gera links de afiliado
+    for i, link in enumerate(all_links):
+        aff = link
         if marketplace == "Amazon":
             tag = cfg.get("tag", "").strip() or "tag-20"
-            aff_link = _append_param(link, "tag", tag)
+            aff = _append_param(link, "tag", tag)
         elif marketplace == "Mercado Livre":
             track = cfg.get("tracking_id", "").strip()
-            if "=" in track: aff_link = f"{link}{'&' if '?' in link else '?'}{track}"
-            elif track: aff_link = _append_param(link, "tracking_id", track)
+            if "=" in track: aff = f"{link}{'&' if '?' in link else '?'}{track}"
+            elif track: aff = _append_param(link, "tracking_id", track)
         else: # Shopee
-            aff_id = cfg.get("affiliate_id", "").strip() or "0"
-            aff_link = _append_param(link, "aff_id", aff_id)
-            aff_link = _append_param(aff_link, "aff_platform", "affiliate")
+            aid = cfg.get("affiliate_id", "").strip() or "0"
+            aff = _append_param(_append_param(link, "aff_id", aid), "aff_platform", "affiliate")
             
-        prog = p_start + (p_end - p_start) * ((i+1)/len(product_links))
-        _log(q, f"{marketplace}: {i+1}/{len(product_links)} processado", prog)
-        q.put({"result": {"marketplace": marketplace, "link_produto": link, "link_afiliado": aff_link}})
+        p = ps + (pe - ps) * ((i+1)/len(all_links))
+        q.put({"result": {"marketplace": marketplace, "link_produto": link, "link_afiliado": aff}})
+        _log(q, f"{marketplace}: Link {i+1} pronto.", p)
 
 # -----------------------------------------------------------------------
-# Entradas específicas
+# Marketplace Wrappers
 # -----------------------------------------------------------------------
 
-def mine_amazon(page, config, q, ps, pe):
+def mine_amazon_wrap(page, config, q, ps, pe):
     urls = ["https://www.amazon.com.br/gp/bestsellers/", "https://www.amazon.com.br/s?k=ofertas"]
-    mine_generic(page, "Amazon", urls, 'a[href*="/dp/"]', config, q, ps, pe)
+    selectors = ['a[href*="/dp/"]', '.s-result-item a', '.a-carousel-card a']
+    mine_generic(page, "Amazon", urls, selectors, config, q, ps, pe)
 
-def mine_ml(page, config, q, ps, pe):
-    urls = ["https://www.mercadolivre.com.br/ofertas"]
-    # Tenta seletores diferentes em cascata se necessário, mas aqui usaremos o mais genérico
-    mine_generic(page, "Mercado Livre", urls, "a.promotion-item__link, a[href*='/MLB-']", config, q, ps, pe)
+def mine_ml_wrap(page, config, q, ps, pe):
+    urls = ["https://www.mercadolivre.com.br/ofertas", "https://www.mercadolivre.com.br/mais-vendidos"]
+    selectors = [".promotion-item__link", ".poly-component__title a", "a[href*='/p/MLB']", "a[href*='/MLB-']"]
+    mine_generic(page, "Mercado Livre", urls, selectors, config, q, ps, pe)
 
-def mine_shopee(page, config, q, ps, pe):
-    urls = ["https://shopee.com.br/flash_sale"]
-    mine_generic(page, "Shopee", urls, 'a[href*="-i."]', config, q, ps, pe)
+def mine_shopee_wrap(page, config, q, ps, pe):
+    urls = ["https://shopee.com.br/flash_sale", "https://shopee.com.br/daily_discover"]
+    selectors = ['a[href*="-i."]', 'a[data-sqe="link"]']
+    mine_generic(page, "Shopee", urls, selectors, config, q, ps, pe)
 
 # -----------------------------------------------------------------------
-# Motor Principal
+# Main Runner
 # -----------------------------------------------------------------------
 
 def run_mining(config: dict):
@@ -231,7 +225,7 @@ def run_mining(config: dict):
 
     active = [m for m in ["Amazon", "Mercado Livre", "Shopee"] if config["marketplaces"][m]["active"]]
     if not active:
-        yield {"progress": 1.0, "message": "⚠️ Nada selecionado."}
+        yield {"progress": 1.0, "message": "⚠️ Nenhum marketplace selecionado."}
         return
 
     segment = 1.0 / len(active)
@@ -240,29 +234,43 @@ def run_mining(config: dict):
         try:
             from playwright.sync_api import sync_playwright
             with sync_playwright() as p:
-                _log(q, "Iniciando navegador Playwright...")
+                _log(q, "Iniciando motor Playwright (Headless)...", 0.05)
+                # Argumentos extras para Railway (Alpine/Debian containers)
                 browser = p.chromium.launch(
                     headless=HEADLESS, 
-                    args=["--no-sandbox", "--disable-dev-shm-usage", "--disable-gpu"]
+                    args=[
+                        "--no-sandbox", 
+                        "--disable-setuid-sandbox", 
+                        "--disable-dev-shm-usage", 
+                        "--disable-gpu",
+                        "--no-first-run",
+                        "--no-zygote"
+                    ]
                 )
+                _log(q, "✅ Navegador lançado. Criando contexto...", 0.1)
+                
                 context = browser.new_context(
                     user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
-                    viewport={'width': 1280, 'height': 720}
+                    viewport={'width': 1280, 'height': 800}
                 )
                 page = context.new_page()
 
-                miners = {"Amazon": mine_amazon, "Mercado Livre": mine_ml, "Shopee": mine_shopee}
+                miners = {
+                    "Amazon": mine_amazon_wrap, 
+                    "Mercado Livre": mine_ml_wrap, 
+                    "Shopee": mine_shopee_wrap
+                }
                 
                 for i, m in enumerate(active):
                     try:
                         miners[m](page, config, q, i*segment, (i+1)*segment)
-                    except Exception as fatal:
-                        _log(q, f"❌ {m}: Erro crítico: {str(fatal)[:100]}")
+                    except Exception as err:
+                        _log(q, f"❌ Erro Crítico em {m}: {str(err)[:150]}")
                 
                 browser.close()
-                _log(q, "Navegador fechado.")
+                _log(q, "Concluído. Navegador encerrado.", 1.0)
         except Exception as e:
-            _log(q, f"❌ Erro Global: {str(e)[:100]}")
+            _log(q, f"❌ Erro Global Playwright: {str(e)[:150]}")
         finally:
             q.put({"done": True})
 
@@ -270,9 +278,9 @@ def run_mining(config: dict):
     
     while True:
         try:
-            item = q.get(timeout=200)
+            item = q.get(timeout=300) # Timeout de 5 minutos por segurança
             if item.get("done"): break
             yield item
         except queue.Empty:
-            yield {"progress": 1.0, "message": "❌ Operação interrompida por timeout."}
+            yield {"progress": 1.0, "message": "❌ Timeout: A operação demorou mais que o esperado."}
             break

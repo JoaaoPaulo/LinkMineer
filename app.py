@@ -189,7 +189,7 @@ with col_center:
         "🚀 Gerar Planilha",
         type="primary",
         disabled=(active_count == 0),
-        use_container_width=True
+        width="stretch"
     )
 
 # -----------------------------------------------------------------------
@@ -263,8 +263,12 @@ if start_btn:
                 # Adiciona ao log de diagnóstico
                 import datetime
                 timestamp = datetime.datetime.now().strftime("%H:%M:%S")
-                logs.append(f"[{timestamp}] {msg}")
-                log_container.code("\n".join(logs[-15:])) # Mostra os últimos 15 logs
+                # Filtra mensagens vazias e logs repetidos rápidos
+                if msg and (not logs or msg != logs[-1].split("] ", 1)[-1]):
+                    logs.append(f"[{timestamp}] {msg}")
+                    # Mostra os logs formatados com quebra de linha
+                    log_content = "\n".join(logs[-20:]) 
+                    log_container.code(log_content, language="text")
 
             if "result" in update:
                 results.append(update["result"])
@@ -287,11 +291,11 @@ if start_btn:
 
         # Resumo por marketplace
         summary = df.groupby("marketplace").size().reset_index(name="qtd_coletada")
-        st.dataframe(summary, use_container_width=True, hide_index=True)
+        st.dataframe(summary, width="stretch", hide_index=True)
 
         # Tabela completa (expandida pelo usuário)
         with st.expander("📋 Ver todos os links coletados"):
-            st.dataframe(df, use_container_width=True, hide_index=True)
+            st.dataframe(df, width="stretch", hide_index=True)
 
         st.markdown("### ⬇️ Baixar Planilha")
 
@@ -312,7 +316,7 @@ if start_btn:
                 data=csv_data,
                 file_name="links_afiliados.csv",
                 mime="text/csv",
-                use_container_width=True,
+                width="stretch",
             )
         with dl_col2:
             st.download_button(
@@ -320,7 +324,7 @@ if start_btn:
                 data=xlsx_data,
                 file_name="links_afiliados.xlsx",
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                use_container_width=True,
+                width="stretch",
             )
 
     else:
