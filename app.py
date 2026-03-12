@@ -105,22 +105,25 @@ with st.sidebar:
 
     # ----------------------------------------------------------------
     # Mercado Livre
-    # DEFAULT_ML_TRACKING vem da variável de ambiente ML_TRACKING_ID
     # ----------------------------------------------------------------
     st.subheader("🛒 Mercado Livre")
-    ml_active = st.checkbox("Ativar Mercado Livre", value=True)
+    ml_active = st.checkbox("Minar Mercado Livre", value=True)
     ml_tracking = st.text_input(
-        "Tracking ID / Matt Tool",
+        "Tracking ID (ML)",
         value=DEFAULT_ML_TRACKING,
-        placeholder="ex: ml-afiliado-123",
-        help="Seu ID de afiliado do Programa de Afiliados ML. "
-             "Pode ser pré-configurado pela variável de ambiente ML_TRACKING_ID."
+        placeholder="ex: meu-tracking-123",
+        help="ID de rastreio simples. Gerado no painel de afiliados."
+    )
+    ml_matt = st.text_input(
+        "Matt Tool (ML)",
+        value=DEFAULT_ML_MATT,
+        placeholder="ex: matt_word=...&matt_tool=...",
+        help="String completa de parâmetros do Matt Tool (opcional)."
     )
     ml_login_type = st.selectbox(
         "Autenticação ML",
         ["Cookies (JSON)", "Credenciais"],
-        key="ml_lt",
-        help="Cookies: exporte do DevTools do Chrome. Credenciais: e-mail + senha."
+        key="ml_lt"
     )
     if "Credenciais" in ml_login_type:
         ml_user = st.text_input("Usuário / E-mail ML", key="ml_user")
@@ -137,15 +140,14 @@ with st.sidebar:
     # DEFAULT_AMAZON_TAG vem da variável de ambiente AMAZON_TAG
     # ----------------------------------------------------------------
     st.subheader("📦 Amazon")
-    amz_active = st.checkbox("Ativar Amazon", value=True)
+    amz_active = st.checkbox("Minar Amazon", value=True)
     amz_tag = st.text_input(
-        "Tag de afiliado",
+        "Tag de afiliado (AMZ)",
         value=DEFAULT_AMAZON_TAG,
         placeholder="ex: seunome-20",
-        help="Sua Tag do Amazon Associates. "
-             "Pode ser pré-configurada pela variável de ambiente AMAZON_TAG."
+        help="Sua Tag do Amazon Associates."
     )
-    amz_login_type = st.selectbox("Autenticação Amazon", ["Cookies (JSON)", "Credenciais"], key="amz_lt")
+    amz_login_type = st.selectbox("Autenticação AMZ", ["Cookies (JSON)", "Credenciais"], key="amz_lt")
     if "Credenciais" in amz_login_type:
         amz_user = st.text_input("Usuário / E-mail Amazon", key="amz_user")
         amz_pass = st.text_input("Senha Amazon", type="password", key="amz_pass")
@@ -161,15 +163,14 @@ with st.sidebar:
     # DEFAULT_SHOPEE_ID vem da variável de ambiente SHOPEE_ID
     # ----------------------------------------------------------------
     st.subheader("🛍️ Shopee")
-    shp_active = st.checkbox("Ativar Shopee", value=True)
+    shp_active = st.checkbox("Minar Shopee", value=True)
     shp_aff_id = st.text_input(
-        "Affiliate ID",
+        "Affiliate ID (SHP)",
         value=DEFAULT_SHOPEE_ID,
         placeholder="ex: 123456789",
-        help="Seu ID do Shopee Affiliate Program. "
-             "Pode ser pré-configurado pela variável de ambiente SHOPEE_ID."
+        help="Seu ID do Shopee Affiliate Program."
     )
-    shp_login_type = st.selectbox("Autenticação Shopee", ["Cookies (JSON)", "Credenciais"], key="shp_lt")
+    shp_login_type = st.selectbox("Autenticação SHP", ["Cookies (JSON)", "Credenciais"], key="shp_lt")
     if "Credenciais" in shp_login_type:
         shp_user = st.text_input("Usuário / E-mail Shopee", key="shp_user")
         shp_pass = st.text_input("Senha Shopee", type="password", key="shp_pass")
@@ -217,6 +218,7 @@ if start_btn:
             "Mercado Livre": {
                 "active": ml_active,
                 "tracking_id": ml_tracking,
+                "matt_tool": ml_matt,
                 "login_type": "Cookies" if "Cookies" in ml_login_type else "Credentials",
                 "user": ml_user,
                 "password": ml_pass,

@@ -119,9 +119,20 @@ def run_mining_demo(config: dict, q: queue.Queue):
                 affiliate_link = _append_param(link, "tag", tag)
 
             elif marketplace == "Mercado Livre":
-                tracking_id = cfg.get("tracking_id", "demo_tracking")
-                affiliate_link = _append_param(link, "tracking_id", tracking_id)
-
+                tracking_id = cfg.get("tracking_id", "").strip()
+                matt_tool = cfg.get("matt_tool", "").strip()
+                
+                affiliate_link = link
+                if tracking_id:
+                    affiliate_link = _append_param(affiliate_link, "tracking_id", tracking_id)
+                if matt_tool:
+                    # Se o matt_tool já tiver '=', anexa direto, senão prefixa com matt_tool=
+                    if "=" in matt_tool:
+                        sep = "&" if "?" in affiliate_link else "?"
+                        affiliate_link = f"{affiliate_link}{sep}{matt_tool}"
+                    else:
+                        affiliate_link = _append_param(affiliate_link, "matt_tool", matt_tool)
+            
             else:  # Shopee
                 aff_id = cfg.get("affiliate_id", "0")
                 affiliate_link = _append_param(link, "aff_id", aff_id)
@@ -326,8 +337,18 @@ def mine_ml(page, config: dict, q: queue.Queue, p_start: float, p_end: float):
            "message": f"ML: {len(product_links)} produto(s) encontrado(s). Gerando links..."})
 
     for i, link in enumerate(product_links):
-        # Link de afiliado ML: adiciona o tracking_id como query param
-        affiliate_link = _append_param(link, "tracking_id", tracking_id)
+        # Suporte para ID simples e/ou string completa do Matt Tool
+        affiliate_link = link
+        
+        if tracking_id:
+            affiliate_link = _append_param(affiliate_link, "tracking_id", tracking_id)
+            
+        if matt_tool:
+            if "=" in matt_tool:
+                sep = "&" if "?" in affiliate_link else "?"
+                affiliate_link = f"{affiliate_link}{sep}{matt_tool}"
+            else:
+                affiliate_link = _append_param(affiliate_link, "matt_tool", matt_tool)
 
         progress = p_start + (p_end - p_start) * ((i + 1) / len(product_links))
         q.put({"progress": progress, "message": f"ML: {i+1}/{len(product_links)} coletados"})
