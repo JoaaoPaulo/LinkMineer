@@ -110,16 +110,10 @@ with st.sidebar:
     st.subheader("🛒 Mercado Livre")
     ml_active = st.checkbox("Minar Mercado Livre", value=True)
     ml_tracking = st.text_input(
-        "Tracking ID (ML)",
-        value=DEFAULT_ML_TRACKING,
-        placeholder="ex: meu-tracking-123",
-        help="ID de rastreio simples. Gerado no painel de afiliados."
-    )
-    ml_matt = st.text_input(
-        "Matt Tool (ML)",
-        value=DEFAULT_ML_MATT,
-        placeholder="ex: matt_word=...&matt_tool=...",
-        help="String completa de parâmetros do Matt Tool (opcional)."
+        "Tracking ID / Matt Tool (ML)",
+        value=DEFAULT_ML_TRACKING or DEFAULT_ML_MATT,
+        placeholder="ex: id-123 OU matt_word=...&matt_tool=...",
+        help="Insira seu ID simples ou a string completa do Matt Tool."
     )
     ml_login_type = st.selectbox(
         "Autenticação ML",
@@ -219,7 +213,6 @@ if start_btn:
             "Mercado Livre": {
                 "active": ml_active,
                 "tracking_id": ml_tracking,
-                "matt_tool": ml_matt,
                 "login_type": "Cookies" if "Cookies" in ml_login_type else "Credentials",
                 "user": ml_user,
                 "password": ml_pass,
