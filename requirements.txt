@@ -1,4 +1,13 @@
-streamlit
-playwright
-pandas
-openpyxl
+# ============================================================
+# requirements.txt – Dependências do projeto LinkMineer
+# ============================================================
+
+# Interface web
+streamlit>=1.32.0
+
+# Automação de navegador (web scraping headless)
+playwright>=1.43.0
+
+# Manipulação e exportação de dados
+pandas>=2.0.0
+openpyxl>=3.1.0   # necessário para exportar .xlsx
