@@ -1,7 +1,7 @@
 """
-miner.py – Versão 10.0 (High Speed & Infinite Scroll).
-Otimizado para grandes volumes (40+ itens) e velocidade aprimorada.
-Fluxo: Rolagem dinâmica + Interceptação de Clipboard + Cliques Ultra-precisos.
+miner.py – Versão 11.0 (Deep Diagnostic Mode).
+Focado em descobrir por que a lista de cards aparece vazia (0 cards).
+Inclui validação de sessão e carregamento resiliente.
 """
 
 import json
@@ -61,6 +61,7 @@ def _load_cookies(page, q: queue.Queue, cookies_json: str, marketplace: str):
         if isinstance(cookies, list):
             sanitized = _sanitize_cookies(cookies)
             page.context.add_cookies(sanitized)
+            _log(q, f"✅ {marketplace}: Cookies injetados.")
             return True
     except Exception as e:
         _log(q, f"❌ {marketplace}: Erro nos cookies: {str(e)[:50]}")
@@ -76,13 +77,8 @@ def mine_amazon(page, config, q, ps, pe):
     tag = cfg.get("tag", "").strip() or "tag-20"
     if cfg.get("cookies"): _load_cookies(page, q, cfg["cookies"], "Amazon")
     try:
-        page.goto("https://www.amazon.com.br/gp/bestsellers/", timeout=45000, wait_until="commit")
-        page.wait_for_timeout(2000)
-        # Scroll dinâmico simples para Amazon
-        for _ in range(2):
-            page.keyboard.press("PageDown")
-            page.wait_for_timeout(800)
-        
+        page.goto("https://www.amazon.com.br/gp/bestsellers/", timeout=45000)
+        page.wait_for_timeout(3000)
         links = page.eval_on_selector_all('a[href*="/dp/"]', 'els => els.map(e => e.href)')
         valid = list(dict.fromkeys([_clean_url(l, "https://www.amazon.com.br") for l in links if "/dp/" in l]))[:qtd]
         for i, link in enumerate(valid):
@@ -94,14 +90,16 @@ def mine_amazon(page, config, q, ps, pe):
 def mine_ml(page, config, q, ps, pe):
     cfg = config["marketplaces"]["Mercado Livre"]
     qtd = config.get("qtd_produtos", 5)
-    _log(q, "ML: Ativando motor de alta velocidade...", ps)
+    hub_url = "https://www.mercadolivre.com.br/afiliados/hub#menu-user"
+    
+    _log(q, "ML: Iniciando motor diagnóstico (v11)...", ps)
     
     if not cfg.get("cookies"):
-        _log(q, "⚠️ ML: Cookies obrigatórios!")
+        _log(q, "⚠️ ML: Cookies ausentes! O Hub exige login.")
         return
     _load_cookies(page, q, cfg["cookies"], "ML")
 
-    # Injeta interceptador de clipboard ultra-rápido
+    # Injeta interceptador de clipboard
     page.add_init_script("""
         window._lastCopiedLink = '';
         if (navigator.clipboard) {
@@ -113,8 +111,28 @@ def mine_ml(page, config, q, ps, pe):
     """)
 
     try:
-        page.goto("https://www.mercadolivre.com.br/afiliados/hub#menu-user", timeout=60000, wait_until="commit")
+        _log(q, f"ML: Navegando para {hub_url}...")
+        # Usamos domcontentloaded para garantir que a estrutura base está lá
+        page.goto(hub_url, timeout=60000, wait_until="domcontentloaded")
+        
+        _log(q, "ML: Verificando carregamento da página...")
         page.wait_for_timeout(5000)
+        
+        # Diagnóstico de Redirecionamento
+        current_url = page.url
+        current_title = page.title()
+        _log(q, f"ML Info: URL={current_url} | Title={current_title}")
+        
+        if "login" in current_url.lower() or "auth" in current_url.lower():
+            _log(q, "❌ ML: Redirecionado para Login! Seus cookies podem estar expirados.")
+            return
+
+        # Busca cards com espera explícita
+        _log(q, "ML: Aguardando cards (.andes-card) aparecerem de fato...")
+        try:
+            page.wait_for_selector(".andes-card", timeout=20000)
+        except:
+            _log(q, "⚠️ ML: Timeout aguardando '.andes-card'. Tentando seletor reserva...")
         
         count = 0
         processed_links = set()
@@ -122,79 +140,76 @@ def mine_ml(page, config, q, ps, pe):
         max_scroll_attempts = 15
 
         while count < qtd and scroll_attempts < max_scroll_attempts:
-            # Captura cards visíveis no momento
-            cards = page.query_selector_all(".andes-card")
-            _log(q, f"ML: Analisando {len(cards)} cards na vista atual...")
+            # Lista cards visíveis
+            cards = page.query_selector_all(".andes-card, [class*='card']")
+            _log(q, f"ML: {len(cards)} cards detectados na vista atual.")
             
+            if not cards:
+                # Se não tem nada e é a primeira vez, pode ser renderização lenta
+                _log(q, "ML: Tentando rolar um pouco para forçar renderização...")
+                page.keyboard.press("PageDown")
+                page.wait_for_timeout(2000)
+                scroll_attempts += 1
+                continue
+
             found_in_round = 0
             for card in cards:
                 if count >= qtd: break
                 
                 try:
-                    # 1. Identificar se já processamos este produto para ser rápido
+                    # Produto Link
                     link_el = card.query_selector("a[href*='mercadolivre.com.br']")
                     if not link_el: continue
-                    prod_url = _clean_url(link_el.get_attribute("href"))
+                    p_url = _clean_url(link_el.get_attribute("href"))
                     
-                    if prod_url in processed_links: continue
-                    processed_links.add(prod_url)
+                    if p_url in processed_links: continue
+                    processed_links.add(p_url)
 
-                    # 2. Interação
-                    # Botão "Compartilhar"
+                    # Botão Compartilhar
                     share_btn = card.query_selector("button:has-text('Compartilhar'), .andes-button--share")
                     if not share_btn: continue
                     
                     card.scroll_into_view_if_needed()
                     share_btn.click()
+                    page.wait_for_timeout(2500)
                     
-                    # Espera menor, mas com fallback
-                    page.wait_for_timeout(1800)
-                    
-                    # Clicar em "Copiar link"
+                    # Copiar Link
                     page.evaluate("window._lastCopiedLink = '';")
                     copy_btn = page.query_selector("button:has-text('Copiar link')")
                     if copy_btn:
                         copy_btn.click()
-                        page.wait_for_timeout(800)
+                        page.wait_for_timeout(1000)
                     
                     aff_url = page.evaluate("window._lastCopiedLink")
-                    
-                    if not aff_url: # Fallback input
+                    if not aff_url:
                         inp = page.query_selector("input.andes-form-control__field")
                         if inp: aff_url = inp.get_attribute("value")
 
                     if aff_url:
-                        _log(q, f"✅ ML Item {count+1} pronto.")
-                        q.put({"result": {"marketplace": "Mercado Livre", "link_produto": prod_url, "link_afiliado": aff_url}})
+                        _log(q, f"✅ ML Item {count+1} coletado.")
+                        q.put({"result": {"marketplace": "Mercado Livre", "link_produto": p_url, "link_afiliado": aff_url}})
                         count += 1
                         found_in_round += 1
-                        # Atualiza progresso proporcional
-                        prog = ps + (pe - ps) * (count / qtd)
-                        _log(q, f"Progresso ML: {count}/{qtd}", prog)
+                        _log(q, f"ML Progresso: {count}/{qtd}", ps + (pe-ps)*(count/qtd))
                     
                     page.keyboard.press("Escape")
-                    page.wait_for_timeout(400)
-                    
+                    page.wait_for_timeout(500)
                 except:
                     page.keyboard.press("Escape")
                     continue
 
-            # Se não achou nada novo nesta rodada ou se ainda precisa de mais, rola a página
+            # Controle de Rolagem
             if found_in_round == 0 or count < qtd:
                 scroll_attempts += 1
-                _log(q, f"ML: Rulagem {scroll_attempts} para buscar mais itens...")
+                _log(q, f"ML: Rolagem {scroll_attempts} / {max_scroll_attempts}...")
                 page.keyboard.press("PageDown")
-                page.wait_for_timeout(1500)
-            else:
-                # Se achou itens, tenta rolar só um pouco para trazer os próximos
-                page.mouse.wheel(0, 800)
-                page.wait_for_timeout(1000)
+                page.wait_for_timeout(2000)
 
-        if count < qtd:
-            _log(q, f"ℹ️ ML: Coleta finalizada com {count} itens (alvo era {qtd}).")
+        if count == 0:
+            _log(q, "❌ ML: Falha total na coleta. Verifique se os cookies permitem acesso ao Hub.")
             
     except Exception as e:
-        _log(q, f"❌ ML Erro: {str(e)[:100]}")
+        _log(q, f"❌ ML Erro Fatal: {str(e)[:150]}")
 
 def mine_shopee(page, config, q, ps, pe):
     cfg = config["marketplaces"]["Shopee"]
@@ -202,8 +217,8 @@ def mine_shopee(page, config, q, ps, pe):
     aid = cfg.get("affiliate_id", "").strip() or "0"
     if cfg.get("cookies"): _load_cookies(page, q, cfg["cookies"], "Shopee")
     try:
-        page.goto("https://shopee.com.br/flash_sale", timeout=45000, wait_until="commit")
-        page.wait_for_timeout(4000)
+        page.goto("https://shopee.com.br/flash_sale", timeout=45000)
+        page.wait_for_timeout(5000)
         page.keyboard.press("End")
         page.wait_for_timeout(1000)
         links = page.eval_on_selector_all('a[href*="-i."]', 'els => els.map(e => e.href)')
@@ -215,7 +230,7 @@ def mine_shopee(page, config, q, ps, pe):
     except Exception as e: _log(q, f"❌ Shopee: {str(e)[:50]}")
 
 # -----------------------------------------------------------------------
-# Runner
+# Motor Principal
 # -----------------------------------------------------------------------
 
 def run_mining(config: dict):
@@ -233,22 +248,27 @@ def run_mining(config: dict):
             try:
                 from playwright.sync_api import sync_playwright
                 with sync_playwright() as p:
-                    b = p.chromium.launch(headless=HEADLESS, args=["--no-sandbox", "--disable-dev-shm-usage"])
-                    ctx = b.new_context(permissions=["clipboard-read", "clipboard-write"])
-                    page = ctx.new_page()
+                    _log(q, "Abrindo Navegador...")
+                    browser = p.chromium.launch(headless=HEADLESS, args=["--no-sandbox", "--disable-dev-shm-usage"])
+                    context = browser.new_context(
+                        user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+                        permissions=["clipboard-read", "clipboard-write"]
+                    )
+                    page = context.new_page()
                     active = [m for m in ["Amazon", "Mercado Livre", "Shopee"] if config["marketplaces"][m]["active"]]
                     seg = 1.0/len(active) if active else 1
-                    map_m = {"Amazon": mine_amazon, "Mercado Livre": mine_ml, "Shopee": mine_shopee}
+                    miners = {"Amazon": mine_amazon, "Mercado Livre": mine_ml, "Shopee": mine_shopee}
                     for i, m in enumerate(active):
-                        map_m[m](page, config, q, i*seg, (i+1)*seg)
-                    b.close()
-            except Exception as e: _log(q, f"❌ Erro Global: {e}")
+                        try: miners[m](page, config, q, i*seg, (i+1)*seg)
+                        except Exception as e: _log(q, f"❌ {m} Fatal: {e}")
+                    browser.close()
+            except Exception as e: _log(q, f"❌ Erro Crítico: {e}")
             finally: q.put({"done": True})
         threading.Thread(target=worker, daemon=True).start()
 
     while True:
         try:
-            item = q.get(timeout=600) # 10 minutos para grandes batches
+            item = q.get(timeout=600)
             if item.get("done"): break
             yield item
         except: break
