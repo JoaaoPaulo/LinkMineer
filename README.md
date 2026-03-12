@@ -73,3 +73,5 @@ Disponível para download em **CSV** e **XLSX**.
 - Os marketplaces podem bloquear acesso automatizado (captcha, bot detection). Nesses casos, o Chromium abre visivelmente para você resolver o desafio manualmente.
 - Certifique-se de que sua conta de afiliado está ativa em cada marketplace antes de usar.
 - Respeite os Termos de Serviço de cada marketplace ao usar este tool.
+
+update
