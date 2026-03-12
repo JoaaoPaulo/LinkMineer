@@ -21,6 +21,7 @@ from miner import run_mining
 # Lê valores padrão das variáveis de ambiente do Railway (ou deixa vazio)
 # -----------------------------------------------------------------------
 DEFAULT_ML_TRACKING = os.environ.get("ML_TRACKING_ID", "")
+DEFAULT_ML_MATT     = os.environ.get("ML_MATT_TOOL", "")
 DEFAULT_AMAZON_TAG  = os.environ.get("AMAZON_TAG", "")
 DEFAULT_SHOPEE_ID   = os.environ.get("SHOPEE_ID", "")
 
