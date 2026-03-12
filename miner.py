@@ -1,10 +1,10 @@
 """
-miner.py – Núcleo de automação do LinkMineer (Versão com Diagnóstico e Correção de Cookies).
+miner.py – Núcleo de automação do LinkMineer (Versão Ultra Diagnóstica).
 
-Melhorias:
-  - Sanitização de cookies (fix sameSite error).
-  - Restauração do modo demo interno.
-  - Simplificação da lógica de links ML.
+Estratégia:
+  - Logs granulares para cada ação (navegação, injeção, raspagem).
+  - Captura e exibição de erros reais (sem silent fail).
+  - Sanitização de cookies para evitar erros de SameSite.
 """
 
 import json
@@ -12,6 +12,7 @@ import os
 import time
 import queue
 import threading
+import datetime
 from urllib.parse import urlparse, urlunparse
 
 _IS_SERVER = os.environ.get("RAILWAY_ENVIRONMENT") is not None or \
@@ -22,6 +23,12 @@ HEADLESS = os.environ.get("PLAYWRIGHT_HEADLESS", "true" if _IS_SERVER else "fals
 # Helpers
 # -----------------------------------------------------------------------
 
+def _log(q: queue.Queue, message: str, progress: float = None):
+    data = {"message": message}
+    if progress is not None:
+        data["progress"] = progress
+    q.put(data)
+
 def _clean_url(url: str) -> str:
     p = urlparse(url)
     return urlunparse((p.scheme, p.netloc, p.path, "", "", ""))
@@ -31,57 +38,53 @@ def _append_param(url: str, key: str, value: str) -> str:
     return f"{url}{sep}{key}={value}"
 
 def _sanitize_cookies(cookies):
-    """
-    Corrige erros comuns em cookies exportados:
-    - Valor de 'sameSite' deve ser Strict, Lax ou None.
-    - Remove atributos que o Playwright não aceita.
-    """
     valid_samesite = ["Strict", "Lax", "None"]
     sanitized = []
     for c in cookies:
+        if not isinstance(c, dict): continue
         cookie = c.copy()
-        # Corrige SameSite
         ss = str(cookie.get("sameSite", "")).capitalize()
         if ss not in valid_samesite:
-            # Se for 'no_restriction', Playwright pede 'None' + 'secure=True'
             if ss == "No_restriction":
                 cookie["sameSite"] = "None"
                 cookie["secure"] = True
             else:
-                # Fallback seguro para o Playwright
                 cookie.pop("sameSite", None)
         else:
             cookie["sameSite"] = ss
         
-        # Garante que campos obrigatórios existam e remove lixo
         if "name" in cookie and "value" in cookie and "domain" in cookie:
             sanitized.append(cookie)
     return sanitized
 
-def _load_cookies(page, cookies_json: str):
+def _load_cookies(page, q: queue.Queue, cookies_json: str, marketplace: str):
     try:
+        _log(q, f"{marketplace}: Analisando cookies...")
         cookies = json.loads(cookies_json)
         if isinstance(cookies, list):
             sanitized = _sanitize_cookies(cookies)
             page.context.add_cookies(sanitized)
+            _log(q, f"✅ {marketplace}: {len(sanitized)} cookies injetados.")
             return True
+        else:
+            _log(q, f"⚠️ {marketplace}: Formato de cookies inválido (não é uma lista).")
     except Exception as e:
-        print(f"Erro ao carregar cookies: {e}")
+        _log(q, f"❌ {marketplace}: Erro ao carregar cookies: {str(e)[:100]}")
     return False
 
-def _check_blocks(page, marketplace: str):
+def _check_blocks(page):
     title = page.title().lower()
     content = page.content().lower()
     blocks = ["captcha", "robot", "human verification", "bot detection", "access denied", "403 forbidden", "press and hold"]
     for b in blocks:
         if b in title or b in content:
-            return f"Bloqueio detectado ({b})"
+            return f"Bloqueio detectado: {b}"
     if "amazon.com.br/errors/validatecaptcha" in page.url:
         return "Amazon Captcha"
     return None
 
 # -----------------------------------------------------------------------
-# Demo Mode (Restaurado)
+# Demo Mode
 # -----------------------------------------------------------------------
 
 DEMO_PRODUCTS = {
@@ -100,130 +103,128 @@ def run_mining_demo(config: dict, q: queue.Queue):
         cfg = config["marketplaces"][m]
         items = DEMO_PRODUCTS.get(m, [])
         for i, link in enumerate(items[:qtd]):
-            time.sleep(0.5)
+            time.sleep(0.3)
             aff_link = link
-            if m == "Amazon": aff_link = _append_param(link, "tag", cfg.get("tag", "demo-20"))
+            if m == "Amazon": 
+                tag = cfg.get("tag", "").strip() or "demo-20"
+                aff_link = _append_param(link, "tag", tag)
             elif m == "Mercado Livre":
-                track = cfg.get("tracking_id", "").strip()
+                track = cfg.get("tracking_id", "").strip() or "demo-ml"
                 if "=" in track: aff_link = f"{link}{'&' if '?' in link else '?'}{track}"
-                elif track: aff_link = _append_param(link, "tracking_id", track)
+                else: aff_link = _append_param(link, "tracking_id", track)
             else: # Shopee
-                aff_link = _append_param(link, "aff_id", cfg.get("affiliate_id", "0"))
+                aff_id = cfg.get("affiliate_id", "").strip() or "0"
+                aff_link = _append_param(link, "aff_id", aff_id)
                 aff_link = _append_param(aff_link, "aff_platform", "affiliate")
             
             done += 1
-            q.put({"progress": done/total, "message": f"[DEMO] {m}: {i+1} coletado"})
+            _log(q, f"[DEMO] {m}: Item {i+1} pronto", done/total)
             q.put({"result": {"marketplace": m, "link_produto": link, "link_afiliado": aff_link}})
     q.put({"done": True})
 
 # -----------------------------------------------------------------------
-# Amazon
+# Core Mining Logic
 # -----------------------------------------------------------------------
 
-def mine_amazon(page, config: dict, q: queue.Queue, p_start: float, p_end: float):
-    cfg = config["marketplaces"]["Amazon"]
+def mine_generic(page, marketplace: str, source_urls: list, selector: str, config: dict, q: queue.Queue, p_start: float, p_end: float):
+    cfg = config["marketplaces"][marketplace]
     qtd = config.get("qtd_produtos", 5)
-    tag = cfg.get("tag", "").strip() or "tag-20"
-
-    q.put({"progress": p_start, "message": "Amazon: Iniciando..."})
-    if cfg.get("cookies"): _load_cookies(page, cfg["cookies"])
-
-    source_urls = ["https://www.amazon.com.br/gp/bestsellers/", "https://www.amazon.com.br/s?k=ofertas"]
-    product_links = []
     
+    _log(q, f"{marketplace}: Iniciando mineração...", p_start)
+    
+    if cfg.get("cookies"):
+        _load_cookies(page, q, cfg["cookies"], marketplace)
+
+    product_links = []
     for url in source_urls:
+        if len(product_links) >= qtd: break
+        
         try:
-            page.goto(url, timeout=30000)
-            block = _check_blocks(page, "Amazon")
+            _log(q, f"{marketplace}: Acessando {url}...")
+            page.goto(url, timeout=45000, wait_until="domcontentloaded")
+            
+            # Aguarda um pouco mais em caso de CSR (Shopee)
+            page.wait_for_timeout(3000)
+            
+            block = _check_blocks(page)
             if block:
-                q.put({"progress": p_start, "message": f"⚠️ Amazon: {block}"})
+                _log(q, f"⚠️ {marketplace}: {block}")
                 continue
-            page.wait_for_timeout(2000)
-            links = page.eval_on_selector_all('a[href*="/dp/"]', 'els => els.map(e => e.href)')
-            product_links.extend([_clean_url(l) for l in links if "/dp/" in l])
-            if len(product_links) >= qtd: break
-        except: continue
+            
+            _log(q, f"{marketplace}: Buscando produtos...")
+            links = page.eval_on_selector_all(selector, 'els => els.map(e => e.href)')
+            
+            # Filtros específicos
+            if marketplace == "Amazon":
+                found = [_clean_url(l) for l in links if "/dp/" in l]
+            elif marketplace == "Mercado Livre":
+                found = [_clean_url(l) for l in links if "mercadolivre.com.br" in l]
+            else: # Shopee
+                found = [_clean_url(l) for l in links if "-i." in l]
+                
+            if found:
+                _log(q, f"✅ {marketplace}: {len(found)} links encontrados.")
+                product_links.extend(found)
+            else:
+                _log(q, f"ℹ️ {marketplace}: Nenhum link encontrado com o seletor atual.")
+                
+        except Exception as e:
+            _log(q, f"❌ {marketplace}: Erro ao acessar URL: {str(e)[:100]}")
 
     product_links = list(dict.fromkeys(product_links))[:qtd]
-    for i, link in enumerate(product_links):
-        aff_link = _append_param(link, "tag", tag)
-        prog = p_start + (p_end - p_start) * ((i+1)/len(product_links))
-        q.put({"progress": prog, "message": f"Amazon: {i+1}/{len(product_links)}"})
-        q.put({"result": {"marketplace": "Amazon", "link_produto": link, "link_afiliado": aff_link}})
-
-# -----------------------------------------------------------------------
-# Mercado Livre
-# -----------------------------------------------------------------------
-
-def mine_ml(page, config: dict, q: queue.Queue, p_start: float, p_end: float):
-    cfg = config["marketplaces"]["Mercado Livre"]
-    qtd = config.get("qtd_produtos", 5)
-    track = cfg.get("tracking_id", "").strip()
-
-    q.put({"progress": p_start, "message": "ML: Iniciando..."})
-    if cfg.get("cookies"): _load_cookies(page, cfg["cookies"])
-
-    source_urls = ["https://www.mercadolivre.com.br/ofertas"]
-    product_links = []
     
-    for url in source_urls:
-        try:
-            page.goto(url, timeout=30000)
-            if _check_blocks(page, "ML"): continue
-            page.wait_for_timeout(2000)
-            links = page.eval_on_selector_all(".promotion-item__link", 'els => els.map(e => e.href)')
-            product_links.extend([_clean_url(l) for l in links])
-            if len(product_links) >= qtd: break
-        except: continue
+    if not product_links:
+        _log(q, f"⚠️ {marketplace}: Não foi possível coletar nenhum link.")
+        return
 
-    product_links = list(dict.fromkeys(product_links))[:qtd]
+    # Geração dos links de afiliado
     for i, link in enumerate(product_links):
         aff_link = link
-        if "=" in track: aff_link = f"{link}{'&' if '?' in link else '?'}{track}"
-        elif track: aff_link = _append_param(link, "tracking_id", track)
-        
-        prog = p_start + (p_end - p_start) * ((i+1)/len(product_links))
-        q.put({"progress": prog, "message": f"ML: {i+1}/{len(product_links)}"})
-        q.put({"result": {"marketplace": "Mercado Livre", "link_produto": link, "link_afiliado": aff_link}})
-
-# -----------------------------------------------------------------------
-# Shopee
-# -----------------------------------------------------------------------
-
-def mine_shopee(page, config: dict, q: queue.Queue, p_start: float, p_end: float):
-    cfg = config["marketplaces"]["Shopee"]
-    qtd = config.get("qtd_produtos", 5)
-    aff_id = cfg.get("affiliate_id", "").strip() or "0"
-
-    q.put({"progress": p_start, "message": "Shopee: Iniciando..."})
-    if cfg.get("cookies"): _load_cookies(page, cfg["cookies"])
-
-    try:
-        page.goto("https://shopee.com.br/flash_sale", timeout=30000)
-        page.wait_for_timeout(4000)
-        links = page.eval_on_selector_all('a[href*="-i."]', 'els => els.map(e => e.href)')
-        product_links = list(dict.fromkeys([_clean_url(l) for l in links]))[:qtd]
-        
-        for i, link in enumerate(product_links):
+        if marketplace == "Amazon":
+            tag = cfg.get("tag", "").strip() or "tag-20"
+            aff_link = _append_param(link, "tag", tag)
+        elif marketplace == "Mercado Livre":
+            track = cfg.get("tracking_id", "").strip()
+            if "=" in track: aff_link = f"{link}{'&' if '?' in link else '?'}{track}"
+            elif track: aff_link = _append_param(link, "tracking_id", track)
+        else: # Shopee
+            aff_id = cfg.get("affiliate_id", "").strip() or "0"
             aff_link = _append_param(link, "aff_id", aff_id)
             aff_link = _append_param(aff_link, "aff_platform", "affiliate")
-            prog = p_start + (p_end - p_start) * ((i+1)/len(product_links))
-            q.put({"progress": prog, "message": f"Shopee: {i+1}/{len(product_links)}"})
-            q.put({"result": {"marketplace": "Shopee", "link_produto": link, "link_afiliado": aff_link}})
-    except Exception as e:
-        q.put({"progress": p_end, "message": f"Shopee erro: {str(e)[:50]}"})
+            
+        prog = p_start + (p_end - p_start) * ((i+1)/len(product_links))
+        _log(q, f"{marketplace}: {i+1}/{len(product_links)} processado", prog)
+        q.put({"result": {"marketplace": marketplace, "link_produto": link, "link_afiliado": aff_link}})
 
 # -----------------------------------------------------------------------
-# Main Engine
+# Entradas específicas
+# -----------------------------------------------------------------------
+
+def mine_amazon(page, config, q, ps, pe):
+    urls = ["https://www.amazon.com.br/gp/bestsellers/", "https://www.amazon.com.br/s?k=ofertas"]
+    mine_generic(page, "Amazon", urls, 'a[href*="/dp/"]', config, q, ps, pe)
+
+def mine_ml(page, config, q, ps, pe):
+    urls = ["https://www.mercadolivre.com.br/ofertas"]
+    # Tenta seletores diferentes em cascata se necessário, mas aqui usaremos o mais genérico
+    mine_generic(page, "Mercado Livre", urls, "a.promotion-item__link, a[href*='/MLB-']", config, q, ps, pe)
+
+def mine_shopee(page, config, q, ps, pe):
+    urls = ["https://shopee.com.br/flash_sale"]
+    mine_generic(page, "Shopee", urls, 'a[href*="-i."]', config, q, ps, pe)
+
+# -----------------------------------------------------------------------
+# Motor Principal
 # -----------------------------------------------------------------------
 
 def run_mining(config: dict):
     q = queue.Queue()
+    
     if config.get("demo_mode", False):
         t = threading.Thread(target=run_mining_demo, args=(config, q), daemon=True)
         t.start()
         while True:
-            item = q.get(); 
+            item = q.get()
             if item.get("done"): break
             yield item
         return
@@ -239,23 +240,39 @@ def run_mining(config: dict):
         try:
             from playwright.sync_api import sync_playwright
             with sync_playwright() as p:
-                browser = p.chromium.launch(headless=HEADLESS, args=["--no-sandbox", "--disable-dev-shm-usage"])
-                context = browser.new_context(user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36")
+                _log(q, "Iniciando navegador Playwright...")
+                browser = p.chromium.launch(
+                    headless=HEADLESS, 
+                    args=["--no-sandbox", "--disable-dev-shm-usage", "--disable-gpu"]
+                )
+                context = browser.new_context(
+                    user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+                    viewport={'width': 1280, 'height': 720}
+                )
                 page = context.new_page()
+
                 miners = {"Amazon": mine_amazon, "Mercado Livre": mine_ml, "Shopee": mine_shopee}
+                
                 for i, m in enumerate(active):
-                    try: miners[m](page, config, q, i*segment, (i+1)*segment)
-                    except Exception as fatal: q.put({"progress": (i+1)*segment, "message": f"❌ {m} Erro: {fatal}"})
+                    try:
+                        miners[m](page, config, q, i*segment, (i+1)*segment)
+                    except Exception as fatal:
+                        _log(q, f"❌ {m}: Erro crítico: {str(fatal)[:100]}")
+                
                 browser.close()
-        except Exception as e: q.put({"progress": 1.0, "message": f"❌ Erro Navegador: {e}"})
-        finally: q.put({"done": True})
+                _log(q, "Navegador fechado.")
+        except Exception as e:
+            _log(q, f"❌ Erro Global: {str(e)[:100]}")
+        finally:
+            q.put({"done": True})
 
     threading.Thread(target=worker, daemon=True).start()
+    
     while True:
         try:
-            item = q.get(timeout=180)
+            item = q.get(timeout=200)
             if item.get("done"): break
             yield item
         except queue.Empty:
-            yield {"progress": 1.0, "message": "❌ Timeout."}
+            yield {"progress": 1.0, "message": "❌ Operação interrompida por timeout."}
             break
