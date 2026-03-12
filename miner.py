@@ -1,6 +1,7 @@
 """
-miner.py – Versão 8.0 (ML Hub Final Polish).
-Totalmente alinhado às instruções do usuário: Compartilhar -> Copiar Link -> Esc.
+miner.py – Versão 9.0 (Clipboard Intercept Edition).
+Implementa Interceptação de Clipboard para capturar links de afiliado do ML Hub.
+Fluxo: Compartilhar -> Copiar Link -> Interceptação de Clipboard -> Esc.
 """
 
 import json
@@ -97,10 +98,33 @@ def mine_ml(page, config, q, ps, pe):
     cfg = config["marketplaces"]["Mercado Livre"]
     qtd = config.get("qtd_produtos", 5)
     _log(q, "ML: Iniciando...", ps)
-    if cfg.get("cookies"): _load_cookies(page, q, cfg["cookies"], "ML")
-    else:
+    
+    if not cfg.get("cookies"):
         _log(q, "⚠️ ML: Erro! Cookies são obrigatórios.")
         return
+    _load_cookies(page, q, cfg["cookies"], "ML")
+
+    # Injeta script para interceptar o clipboard
+    page.add_init_script("""
+        window._lastCopiedLink = '';
+        if (navigator.clipboard) {
+            const originalWriteText = navigator.clipboard.writeText;
+            navigator.clipboard.writeText = async (text) => {
+                window._lastCopiedLink = text;
+                return originalWriteText ? originalWriteText.call(navigator.clipboard, text) : Promise.resolve();
+            };
+        }
+        // Fallback para execCommand('copy') se usado
+        document.execCommand = (function(orig){
+            return function(command, showUI, value){
+                if (command === 'copy') {
+                    // Tenta capturar o que está selecionado
+                    window._lastCopiedLink = window.getSelection().toString();
+                }
+                return orig.apply(this, arguments);
+            };
+        })(document.execCommand);
+    """)
 
     try:
         _log(q, "ML: Acessando Hub de Afiliados...")
@@ -108,9 +132,7 @@ def mine_ml(page, config, q, ps, pe):
         page.wait_for_timeout(8000)
         _scroll_page_smooth(page, q, "ML")
         
-        # Seletores de cards do ML (Hub)
-        # O Hub pode usar '.andes-card' ou '.hub-product-card' ou similar
-        cards = page.query_selector_all(".andes-card, .hub-card, [class*='card']")
+        cards = page.query_selector_all(".andes-card")
         _log(q, f"ML Hub: {len(cards)} cards detectados.")
         
         count = 0
@@ -122,56 +144,55 @@ def mine_ml(page, config, q, ps, pe):
                 if not link_el: continue
                 prod_url = _clean_url(link_el.get_attribute("href"))
                 
-                # 2. Clicar em Compartilhar
-                # Seletores mais amplos para o botão
-                share_btn = card.query_selector("button:has-text('Compartilhar'), .andes-button--share, [aria-label*='Compartilhar']")
+                # 2. Clicar em "Compartilhar"
+                # O usuário disse: "tem um botão escrito 'compartilhar' em baixo de cada produto"
+                share_btn = card.query_selector("button:has-text('Compartilhar'), .andes-button--share")
                 if not share_btn:
-                    # Tenta clicar em qualquer botão silencioso (comum no ML)
-                    share_btn = card.query_selector(".andes-button--quiet, button")
+                    # Tenta qualquer botão no card que possa ser o de compartilhar
+                    share_btn = card.query_selector("button")
                     if not share_btn or "Compartilhar" not in (share_btn.inner_text() or ""):
                         continue
 
-                _log(q, f"ML Item {count+1}: Clicando em Compartilhar...")
+                _log(q, f"ML Item {count+1}: Clicando em 'Compartilhar'...")
                 card.scroll_into_view_if_needed()
                 share_btn.click()
-                page.wait_for_timeout(3500) # Espera popover abrir e renderizar
+                page.wait_for_timeout(2500) # Espera popover abrir
 
-                # 3. Clicar em "Copiar link" e Capturar o valor
-                # No popover do ML, geralmente há um botão com o texto "Copiar link"
-                # E o link de afiliado costuma estar em um input ou num atributo do botão.
-                aff_url = ""
+                # 3. Clicar em "Copiar link"
+                # O usuário disse: "tem que clicar na primeira para copiar o link, sendo que o nome é literalmente 'copiar link'"
+                # Reseta o buffer de clipboard injetado
+                page.evaluate("window._lastCopiedLink = '';")
                 
-                # A) Tenta encontrar o botão "Copiar link"
-                copy_btn = page.query_selector("button:has-text('Copiar link'), .andes-button:has-text('Copiar link')")
+                copy_btn = page.query_selector("button:has-text('Copiar link'), .andes-list__item-primary:has-text('Copiar link'), [aria-label*='Copiar link']")
                 if copy_btn:
-                    # Alguns botões têm o link num atributo data-link ou similar
+                    _log(q, f"ML Item {count+1}: Clicando em 'Copiar link'...")
+                    copy_btn.click()
+                    page.wait_for_timeout(1500)
+                else:
+                    _log(q, f"ML Item {count+1}: Botão 'Copiar link' não encontrado no popover.")
+                
+                # 4. Recupera o link interceptado
+                aff_url = page.evaluate("window._lastCopiedLink")
+                
+                # Fallback se o clipboard interceptor falhar (tenta ler atributos do botão ou inputs)
+                if not aff_url and copy_btn:
                     aff_url = copy_btn.get_attribute("data-link") or copy_btn.get_attribute("href")
                 
-                # B) Se não achou, tenta o input que fica no popover
                 if not aff_url:
                     input_el = page.query_selector("input[value*='mercadolivre.com'], .andes-form-control__field input")
                     if input_el:
                         aff_url = input_el.get_attribute("value")
-                
-                # C) Fallback: varrer o popover por qualquer texto que pareça um link do ML
-                if not aff_url:
-                    elements = page.query_selector_all(".andes-form-control__field, .andes-modal__content p")
-                    for el in elements:
-                        txt = el.inner_text().strip()
-                        if "mercadolivre.com.br" in txt or "p.mercadolivre" in txt:
-                            aff_url = txt
-                            break
 
                 if aff_url:
-                    _log(q, f"✅ ML Item {count+1} coletado!")
+                    _log(q, f"✅ ML Item {count+1}: Link coletado: {aff_url[:40]}...")
                     q.put({"result": {"marketplace": "Mercado Livre", "link_produto": prod_url, "link_afiliado": aff_url}})
                     count += 1
                 else:
-                    _log(q, f"⚠️ ML Item {count+1}: Link de afiliado não encontrado no popover.")
+                    _log(q, f"⚠️ ML Item {count+1}: Não foi possível capturar o link de afiliado.")
                 
-                # 4. Esc para fechar popover
+                # 5. Esc para fechar popover (ou clique fora)
                 page.keyboard.press("Escape")
-                page.wait_for_timeout(1000)
+                page.wait_for_timeout(800)
                 
             except Exception as e:
                 _log(q, f"ML Erro no item {i+1}: {str(e)[:50]}")
@@ -179,7 +200,7 @@ def mine_ml(page, config, q, ps, pe):
                 continue
 
         if count == 0:
-            _log(q, "⚠️ ML: Nenhum item completo coletado. Tente atualizar os cookies.")
+            _log(q, "⚠️ ML: Nenhum item completo coletado. Verifique os cookies e se a página está em Português.")
             
     except Exception as e:
         _log(q, f"❌ ML Erro Fatal: {str(e)[:100]}")
@@ -198,7 +219,7 @@ def mine_shopee(page, config, q, ps, pe):
         for i, link in enumerate(valid):
             aff = _append_param(_append_param(link, "aff_id", aid), "aff_platform", "affiliate")
             q.put({"result": {"marketplace": "Shopee", "link_produto": link, "link_afiliado": aff}})
-            _log(q, f"Shopee: {i+1}/{len(valid)} pronto.", ps + (pe-ps)*((i+1)/len(valid)))
+            _log(q, f"Shopee: {i+1}/{len(valid)} processado", ps + (pe-ps)*((i+1)/len(valid)))
     except Exception as e: _log(q, f"❌ Shopee Erro: {str(e)[:80]}")
 
 # -----------------------------------------------------------------------
@@ -213,7 +234,7 @@ def run_mining(config: dict):
             for idx, m in enumerate(active):
                 for i in range(config.get("qtd_produtos", 5)):
                     time.sleep(0.1)
-                    q.put({"result": {"marketplace": m, "link_produto": f"https://{m.lower()}.com/p-{i}", "link_afiliado": f"https://{m.lower()}.com/a-{i}"}})
+                    q.put({"result": {"marketplace": m, "link_produto": f"https://{m.lower()}.com.br/p-{i}", "link_afiliado": f"https://{m.lower()}.com.br/aff-{i}"}})
                     _log(q, f"[DEMO] {m} {i+1} pronto", (idx + (i+1)/config.get("qtd_produtos", 5))/len(active))
             q.put({"done": True})
         threading.Thread(target=demo, daemon=True).start()
@@ -224,7 +245,11 @@ def run_mining(config: dict):
                 with sync_playwright() as p:
                     _log(q, "Iniciando motor Playwright...")
                     browser = p.chromium.launch(headless=HEADLESS, args=["--no-sandbox", "--disable-dev-shm-usage", "--disable-gpu"])
-                    context = browser.new_context(user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36")
+                    # Importante: dar permissão de clipboard se o site usar a API moderna
+                    context = browser.new_context(
+                        user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+                        permissions=["clipboard-read", "clipboard-write"]
+                    )
                     page = context.new_page()
                     active = [m for m in ["Amazon", "Mercado Livre", "Shopee"] if config["marketplaces"][m]["active"]]
                     seg = 1.0/len(active) if active else 1
