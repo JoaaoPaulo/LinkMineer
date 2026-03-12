@@ -98,7 +98,7 @@ with st.sidebar:
     # Quantidade de produtos para minerar por marketplace
     qtd_produtos = st.number_input(
         "🔢 Produtos por marketplace",
-        min_value=1, max_value=200, value=5, step=1,
+        min_value=1, max_value=5000, value=5, step=1,
         help="Define quantos produtos serão coletados em cada marketplace ativo."
     )
 

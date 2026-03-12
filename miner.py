@@ -137,7 +137,8 @@ def mine_ml(page, config, q, ps, pe):
         count = 0
         processed_links = set()
         scroll_attempts = 0
-        max_scroll_attempts = 15
+        # Aumentamos o limite de scroll para suportar batches grandes (ex: 500 itens)
+        max_scroll_attempts = max(30, (qtd // 2) + 10)
 
         while count < qtd and scroll_attempts < max_scroll_attempts:
             # Lista cards visíveis
@@ -268,7 +269,7 @@ def run_mining(config: dict):
 
     while True:
         try:
-            item = q.get(timeout=600)
+            item = q.get(timeout=1800) # 30 minutos para batches gigantescos
             if item.get("done"): break
             yield item
         except: break
