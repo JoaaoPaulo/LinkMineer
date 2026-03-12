@@ -2,12 +2,15 @@
 app.py – LinkMineer: Minerador Automático de Links de Afiliados
 Interface Streamlit com barra de progresso, modo demo e exportação CSV/XLSX.
 """
+import os
 
 import io
 import streamlit as st
 import pandas as pd
 from miner import run_mining
 
+# Streamlit vai usar a porta que o Railway define
+port = int(os.environ.get("PORT", 8501))
 # ---------------------------------------------------------------------------
 # Configuração da página
 # ---------------------------------------------------------------------------
