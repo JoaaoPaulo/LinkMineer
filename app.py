@@ -245,22 +245,26 @@ if start_btn:
 
         # Consome o generator do miner.py, processando cada update em tempo real
         for update in run_mining(config):
+            msg = update.get('message', '')
+            
+            # 1. Trata Progresso
             if "progress" in update:
                 val = min(float(update["progress"]), 1.0)
                 progress_bar.progress(val)
-                msg = update.get('message', '')
-                status_text.markdown(f"**{msg}**")
-                
-                # Adiciona ao log de diagnóstico
+                if msg:
+                    status_text.markdown(f"**{msg}**")
+            
+            # 2. Trata Logs (Diagnóstico)
+            if msg:
                 import datetime
                 timestamp = datetime.datetime.now().strftime("%H:%M:%S")
-                # Filtra mensagens vazias e logs repetidos rápidos
-                if msg and (not logs or msg != logs[-1].split("] ", 1)[-1]):
+                # Evita repetir o exato mesmo log se ele vier picado
+                if not logs or msg != logs[-1].split("] ", 1)[-1]:
                     logs.append(f"[{timestamp}] {msg}")
-                    # Mostra os logs formatados com quebra de linha
-                    log_content = "\n".join(logs[-20:]) 
+                    log_content = "\n".join(logs[-25:]) # Aumentado para 25 linhas
                     log_container.code(log_content, language="text")
 
+            # 3. Trata Resultados
             if "result" in update:
                 results.append(update["result"])
 
