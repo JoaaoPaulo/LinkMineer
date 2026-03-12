@@ -105,28 +105,19 @@ with st.sidebar:
     st.markdown("---")
 
     # ----------------------------------------------------------------
-    # Mercado Livre
+    # Mercado Livre (Novo Método: Hub)
     # ----------------------------------------------------------------
     st.subheader("🛒 Mercado Livre")
     ml_active = st.checkbox("Minar Mercado Livre", value=True)
-    ml_tracking = st.text_input(
-        "Tracking ID / Matt Tool (ML)",
-        value=DEFAULT_ML_TRACKING or DEFAULT_ML_MATT,
-        placeholder="ex: id-123 OU matt_word=...&matt_tool=...",
-        help="Insira seu ID simples ou a string completa do Matt Tool."
-    )
+    st.info("⚠️ **Atenção**: O ML agora usa o **Hub de Afiliados**. Você **precisa** usar a opção **Cookies (JSON)** abaixo para o robô conseguir acessar sua página interna.")
+    
     ml_login_type = st.selectbox(
         "Autenticação ML",
-        ["Cookies (JSON)", "Credenciais"],
+        ["Cookies (JSON)"], # Removendo credentials temporariamente pois o Hub é sensível
         key="ml_lt"
     )
-    if "Credenciais" in ml_login_type:
-        ml_user = st.text_input("Usuário / E-mail ML", key="ml_user")
-        ml_pass = st.text_input("Senha ML", type="password", key="ml_pass")
-        ml_cookies = ""
-    else:
-        ml_cookies = st.text_area("Cookies ML (JSON array)", height=80, key="ml_cookies")
-        ml_user, ml_pass = "", ""
+    ml_cookies = st.text_area("Cole os Cookies do ML aqui (JSON array)", height=150, key="ml_cookies")
+    ml_user, ml_pass, ml_tracking = "", "", ""
 
     st.markdown("---")
 
