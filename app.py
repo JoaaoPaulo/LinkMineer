@@ -15,6 +15,8 @@ import io
 import os
 import streamlit as st
 import pandas as pd
+import pandas as pd
+import threading
 from miner import run_mining
 
 # -----------------------------------------------------------------------
@@ -166,6 +168,22 @@ with st.sidebar:
         shp_user, shp_pass = "", ""
 
 # -----------------------------------------------------------------------
+# Gerenciamento de Estado
+# -----------------------------------------------------------------------
+if "results" not in st.session_state:
+    st.session_state.results = []
+if "mining_active" not in st.session_state:
+    st.session_state.mining_active = False
+if "stop_event" not in st.session_state:
+    st.session_state.stop_event = threading.Event()
+
+def stop_mining():
+    if st.session_state.stop_event:
+        st.session_state.stop_event.set()
+    st.session_state.mining_active = False
+    st.toast("🛑 Interrupção solicitada!")
+
+# -----------------------------------------------------------------------
 # Área principal – Botão de ação
 # -----------------------------------------------------------------------
 active_count = sum([ml_active, amz_active, shp_active])
@@ -176,26 +194,40 @@ if active_count == 0:
 # Centraliza o botão na tela
 col_left, col_center, col_right = st.columns([3, 2, 3])
 with col_center:
-    start_btn = st.button(
-        "🚀 Gerar Planilha",
-        type="primary",
-        disabled=(active_count == 0),
-        width="stretch"
-    )
+    if not st.session_state.mining_active:
+        start_btn = st.button(
+            "🚀 Gerar Planilha",
+            type="primary",
+            disabled=(active_count == 0),
+            use_container_width=True
+        )
+    else:
+        st.button(
+            "🛑 Parar Geração",
+            type="secondary",
+            on_click=stop_mining,
+            use_container_width=True
+        )
+        start_btn = False
 
 # -----------------------------------------------------------------------
 # Execução da mineração ao clicar no botão
 # -----------------------------------------------------------------------
 if start_btn:
+    # Reset de estado para nova mineração
+    st.session_state.results = []
+    st.session_state.mining_active = True
+    st.session_state.stop_event.clear()
+
     # Monta o dicionário de configuração a partir dos campos da sidebar
     config = {
         "demo_mode": demo_mode,
         "qtd_produtos": int(qtd_produtos),
+        "stop_event": st.session_state.stop_event, # Passa o evento
         "marketplaces": {
             "Amazon": {
                 "active": amz_active,
                 "tag": amz_tag,
-                # Normaliza tipo de login para "Cookies" ou "Credentials"
                 "login_type": "Cookies" if "Cookies" in amz_login_type else "Credentials",
                 "user": amz_user,
                 "password": amz_pass,
@@ -237,14 +269,15 @@ if start_btn:
     log_container = log_expander.empty()
     logs = []
 
-    # Lista que acumula os resultados conforme chegam
-    results: list = []
-
     try:
         status_text.markdown("**Iniciando mineração...**")
 
         # Consome o generator do miner.py, processando cada update em tempo real
         for update in run_mining(config):
+            # Verifica se foi parado (para sair do loop do generator)
+            if st.session_state.stop_event.is_set():
+                break
+
             msg = update.get('message', '')
             
             # 1. Trata Progresso
@@ -258,27 +291,35 @@ if start_btn:
             if msg:
                 import datetime
                 timestamp = datetime.datetime.now().strftime("%H:%M:%S")
-                # Evita repetir o exato mesmo log se ele vier picado
                 if not logs or msg != logs[-1].split("] ", 1)[-1]:
                     logs.append(f"[{timestamp}] {msg}")
-                    log_content = "\n".join(logs[-25:]) # Aumentado para 25 linhas
+                    log_content = "\n".join(logs[-25:])
                     log_container.code(log_content, language="text")
 
             # 3. Trata Resultados
             if "result" in update:
-                results.append(update["result"])
+                st.session_state.results.append(update["result"])
 
-        progress_bar.progress(1.0)
-        status_text.markdown("✅ **Mineração concluída!**")
+        if st.session_state.stop_event.is_set():
+            status_text.markdown("🛑 **Mineração parada pelo usuário!**")
+            progress_bar.progress(1.0)
+        else:
+            progress_bar.progress(1.0)
+            status_text.markdown("✅ **Mineração concluída!**")
 
     except Exception as e:
         status_text.markdown(f"❌ **Erro durante a mineração:** `{e}`")
         st.exception(e)
+    finally:
+        st.session_state.mining_active = False
+        # st.rerun() # Opcional: força a remoção do botão Stop imediatamente
 
-    # -----------------------------------------------------------------------
-    # Exibição dos resultados e botões de download
-    # -----------------------------------------------------------------------
-    if results:
+# -----------------------------------------------------------------------
+# Exibição dos resultados e botões de download
+# -----------------------------------------------------------------------
+results = st.session_state.results
+
+if results:
         # Cria o DataFrame com as colunas padrão do projeto
         df = pd.DataFrame(results, columns=["marketplace", "link_produto", "link_afiliado"])
 

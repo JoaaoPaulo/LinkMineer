@@ -71,7 +71,7 @@ def _load_cookies(page, q: queue.Queue, cookies_json: str, marketplace: str):
 # Scrapers
 # -----------------------------------------------------------------------
 
-def mine_amazon(page, config, q, ps, pe):
+def mine_amazon(page, config, q, ps, pe, stop_event=None):
     cfg = config["marketplaces"]["Amazon"]
     qtd = config.get("qtd_produtos", 5)
     tag = cfg.get("tag", "").strip() or "tag-20"
@@ -82,12 +82,15 @@ def mine_amazon(page, config, q, ps, pe):
         links = page.eval_on_selector_all('a[href*="/dp/"]', 'els => els.map(e => e.href)')
         valid = list(dict.fromkeys([_clean_url(l, "https://www.amazon.com.br") for l in links if "/dp/" in l]))[:qtd]
         for i, link in enumerate(valid):
+            if stop_event and stop_event.is_set():
+                _log(q, "Amazon: Interrupção solicitada pelo usuário.")
+                break
             aff = _append_param(link, "tag", tag)
             q.put({"result": {"marketplace": "Amazon", "link_produto": link, "link_afiliado": aff}})
             _log(q, f"Amazon: {i+1}/{len(valid)} coletado", ps + (pe-ps)*((i+1)/len(valid)))
     except Exception as e: _log(q, f"❌ Amazon: {str(e)[:50]}")
 
-def mine_ml(page, config, q, ps, pe):
+def mine_ml(page, config, q, ps, pe, stop_event=None):
     cfg = config["marketplaces"]["Mercado Livre"]
     qtd = config.get("qtd_produtos", 5)
     hub_url = "https://www.mercadolivre.com.br/afiliados/hub#menu-user"
@@ -141,6 +144,10 @@ def mine_ml(page, config, q, ps, pe):
         max_scroll_attempts = max(30, (qtd // 2) + 10)
 
         while count < qtd and scroll_attempts < max_scroll_attempts:
+            if stop_event and stop_event.is_set():
+                _log(q, "ML: Interrupção solicitada pelo usuário.")
+                break
+
             # Lista cards visíveis
             cards = page.query_selector_all(".andes-card, [class*='card']")
             _log(q, f"ML: {len(cards)} cards detectados na vista atual.")
@@ -156,6 +163,7 @@ def mine_ml(page, config, q, ps, pe):
             found_in_round = 0
             for card in cards:
                 if count >= qtd: break
+                if stop_event and stop_event.is_set(): break
                 
                 try:
                     # Produto Link
@@ -200,19 +208,19 @@ def mine_ml(page, config, q, ps, pe):
                     continue
 
             # Controle de Rolagem
-            if found_in_round == 0 or count < qtd:
+            if (found_in_round == 0 or count < qtd) and not (stop_event and stop_event.is_set()):
                 scroll_attempts += 1
                 _log(q, f"ML: Rolagem {scroll_attempts} / {max_scroll_attempts}...")
                 page.keyboard.press("PageDown")
                 page.wait_for_timeout(2000)
 
-        if count == 0:
+        if count == 0 and not (stop_event and stop_event.is_set()):
             _log(q, "❌ ML: Falha total na coleta. Verifique se os cookies permitem acesso ao Hub.")
             
     except Exception as e:
         _log(q, f"❌ ML Erro Fatal: {str(e)[:150]}")
 
-def mine_shopee(page, config, q, ps, pe):
+def mine_shopee(page, config, q, ps, pe, stop_event=None):
     cfg = config["marketplaces"]["Shopee"]
     qtd = config.get("qtd_produtos", 5)
     aid = cfg.get("affiliate_id", "").strip() or "0"
@@ -225,6 +233,9 @@ def mine_shopee(page, config, q, ps, pe):
         links = page.eval_on_selector_all('a[href*="-i."]', 'els => els.map(e => e.href)')
         valid = list(dict.fromkeys([_clean_url(l, "https://shopee.com.br") for l in links if "-i." in l]))[:qtd]
         for i, link in enumerate(valid):
+            if stop_event and stop_event.is_set():
+                _log(q, "Shopee: Interrupção solicitada pelo usuário.")
+                break
             aff = _append_param(_append_param(link, "aff_id", aid), "aff_platform", "affiliate")
             q.put({"result": {"marketplace": "Shopee", "link_produto": link, "link_afiliado": aff}})
             _log(q, f"Shopee: {i+1}/{len(valid)} pronto", ps + (pe-ps)*((i+1)/len(valid)))
@@ -234,12 +245,15 @@ def mine_shopee(page, config, q, ps, pe):
 # Motor Principal
 # -----------------------------------------------------------------------
 
-def run_mining(config: dict):
     q = queue.Queue()
+    stop_event = config.get("stop_event")
+    
     if config.get("demo_mode", False):
         def d():
             for m in [k for k,v in config["marketplaces"].items() if v["active"]]:
+                if stop_event and stop_event.is_set(): break
                 for i in range(config.get("qtd_produtos", 5)):
+                    if stop_event and stop_event.is_set(): break
                     q.put({"result": {"marketplace": m, "link_produto": "http://p", "link_afiliado": "http://a"}})
                     time.sleep(0.05)
             q.put({"done": True})
@@ -260,7 +274,10 @@ def run_mining(config: dict):
                     seg = 1.0/len(active) if active else 1
                     miners = {"Amazon": mine_amazon, "Mercado Livre": mine_ml, "Shopee": mine_shopee}
                     for i, m in enumerate(active):
-                        try: miners[m](page, config, q, i*seg, (i+1)*seg)
+                        if stop_event and stop_event.is_set():
+                            _log(q, f"Interrompendo antes de iniciar {m}...")
+                            break
+                        try: miners[m](page, config, q, i*seg, (i+1)*seg, stop_event=stop_event)
                         except Exception as e: _log(q, f"❌ {m} Fatal: {e}")
                     browser.close()
             except Exception as e: _log(q, f"❌ Erro Crítico: {e}")
