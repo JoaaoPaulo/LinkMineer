@@ -248,6 +248,11 @@ if start_btn:
     progress_bar = st.progress(0.0)
     status_text = st.empty()
 
+    # Painel de logs detalhados
+    log_expander = st.expander("🔍 Ver Logs de Execução (Diagnóstico)", expanded=True)
+    log_container = log_expander.empty()
+    logs = []
+
     # Lista que acumula os resultados conforme chegam
     results: list = []
 
@@ -257,13 +262,18 @@ if start_btn:
         # Consome o generator do miner.py, processando cada update em tempo real
         for update in run_mining(config):
             if "progress" in update:
-                # Garante que o valor está entre 0.0 e 1.0
                 val = min(float(update["progress"]), 1.0)
                 progress_bar.progress(val)
-                status_text.markdown(f"**{update.get('message', '')}**")
+                msg = update.get('message', '')
+                status_text.markdown(f"**{msg}**")
+                
+                # Adiciona ao log de diagnóstico
+                import datetime
+                timestamp = datetime.datetime.now().strftime("%H:%M:%S")
+                logs.append(f"[{timestamp}] {msg}")
+                log_container.code("\n".join(logs[-15:])) # Mostra os últimos 15 logs
 
             if "result" in update:
-                # Cada resultado é um dict com marketplace, link_produto, link_afiliado
                 results.append(update["result"])
 
         progress_bar.progress(1.0)
