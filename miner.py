@@ -102,14 +102,6 @@ def mine_ml(page, config, q, ps, pe, stop_event=None):
         return
     _load_cookies(page, q, cfg["cookies"], "ML")
 
-    # Bloquear recursos pesados (Imagens, css, fontes, mídias) para velocidade máxima
-    def block_resources(route):
-        if route.request.resource_type in ["image", "media", "font", "stylesheet"]:
-            route.abort()
-        else:
-            route.continue_()
-    page.route("**/*", block_resources)
-
     # Injeta interceptador de clipboard
     page.add_init_script("""
         window._lastCopiedLink = '';
@@ -176,38 +168,29 @@ def mine_ml(page, config, q, ps, pe, stop_event=None):
                 try:
                     # Produto Link
                     link_el = card.query_selector("a[href*='mercadolivre.com.br']")
-                    if not link_el:
-                        _log(q, "ML DEBUG: Card ignorado - Link do produto não encontrado (a[href*='mercadolivre.com.br']).")
-                        continue
+                    if not link_el: continue
                     p_url = _clean_url(link_el.get_attribute("href"))
                     
-                    if p_url in processed_links:
-                        _log(q, "ML DEBUG: Card ignorado - Produto já processado.")
-                        continue
+                    if p_url in processed_links: continue
                     processed_links.add(p_url)
 
-                    card.scroll_into_view_if_needed()
-                    
                     # Botão Compartilhar
                     share_btn = card.query_selector("button:has-text('Compartilhar'), .andes-button--share")
-                    if not share_btn:
-                        _log(q, "ML DEBUG: Card ignorado - Botão Compartilhar não encontrado neste card.")
-                        continue
+                    if not share_btn: continue
+                    
+                    card.scroll_into_view_if_needed()
                     share_btn.click()
                     
-                    # Clicou, não espera estático 2.5s. Esperamos ativamente o pop-up aparecer pelas classes:
-                    try:
-                        page.wait_for_selector("button:has-text('Copiar link')", timeout=3000)
-                    except:
-                        pass # Continua se não aparecer logo, para não travar
+                    # Otimizado: de 2500ms para 1000ms
+                    page.wait_for_timeout(1000)
                     
                     # Copiar Link
                     page.evaluate("window._lastCopiedLink = '';")
                     copy_btn = page.query_selector("button:has-text('Copiar link')")
                     if copy_btn:
                         copy_btn.click()
-                        # Reduzido de 1s para o tempo estrito que o clipboard processa via JS
-                        page.wait_for_timeout(150)
+                        # Otimizado: de 1000ms para 400ms
+                        page.wait_for_timeout(400)
                     
                     aff_url = page.evaluate("window._lastCopiedLink")
                     if not aff_url:
@@ -215,14 +198,15 @@ def mine_ml(page, config, q, ps, pe, stop_event=None):
                         if inp: aff_url = inp.get_attribute("value")
 
                     if aff_url:
-                        _log(q, f"✅ ML Item {count+1} disparado na velocidade da luz.")
+                        _log(q, f"✅ ML Item {count+1} coletado.")
                         q.put({"result": {"marketplace": "Mercado Livre", "link_produto": p_url, "link_afiliado": aff_url}})
                         count += 1
                         found_in_round += 1
                         _log(q, f"ML Progresso: {count}/{qtd}", ps + (pe-ps)*(count/qtd))
                     
                     page.keyboard.press("Escape")
-                    page.wait_for_timeout(100) # De 500ms para 100ms
+                    # Otimizado: de 500ms para 150ms
+                    page.wait_for_timeout(150)
                 except:
                     page.keyboard.press("Escape")
                     continue
