@@ -40,12 +40,17 @@ st.set_page_config(
 # Removemos os toggles da sidebar aqui, pois eles foram movidos para a área central (Controles Superiores)
 # [PONTO 3 e 9]
 
+if 'is_dark_mode' not in st.session_state:
+    st.session_state['is_dark_mode'] = False
+if 'is_demo_mode' not in st.session_state:
+    st.session_state['is_demo_mode'] = False
+
 # Paleta de Cores LinkMineer Premium
 deep_blue = "#1e3799"
 vibrant_blue = "#0056b3"
 white = "#ffffff"
 black = "#000000"
-is_dark_mode = st.session_state.get('theme', 'light') == 'dark'
+is_dark_mode = st.session_state['is_dark_mode']
 text_primary = black if not is_dark_mode else white
 bg_main = white if not is_dark_mode else "#0e1117"
 sidebar_bg = "#f0f2f6" if not is_dark_mode else "#161b22"
@@ -94,23 +99,20 @@ st.markdown(f"""
     .stApp > header {{ display: none !important; }}
 
     /* [PONTO 3 e 7] Interruptores e Textos de Configuração visíveis */
-    .stCheckbox label p, .stToggle label p, div[data-testid="stMarkdownContainer"] p {{
-        font-weight: 600 !important;
-        color: #333333 !important; /* Cinza escuro/Preto para legibilidade */
+    [data-testid="stToggle"] p, [data-testid="stCheckbox"] p, div[data-baseweb="checkbox"] p {{
+        font-weight: 700 !important;
+        color: #444444 !important; /* Cinza escuro */
     }}
-    /* [PONTO 4] Cor do switch ligado. Texto cinza escuro. */
+    /* [PONTO 4] Cor do switch ligado. */
     div[data-testid="stToggle"] > label > div > div > div {{
         background-color: {deep_blue} !important;
-    }}
-    .stToggle label p {{
-        color: #444444 !important; /* Cinza escuro */
-        font-weight: 700 !important;
     }}
 
     /* CAIXAS DE INFORMAÇÕES (TEXTO/NUMERO) */
     .stTextInput input, .stTextArea textarea, .stSelectbox > div > div, .stNumberInput input {{
         background-color: #f0f8ff !important; /* Azul claro (aliceblue) */
         color: {deep_blue} !important; /* Texto interno azul escuro */
+        caret-color: {deep_blue} !important; /* Barrinha de escrita visível */
         border: 2px solid {deep_blue} !important; /* Borda azul escuro */
         border-radius: 6px !important;
         font-weight: 600 !important;
@@ -256,9 +258,10 @@ st.divider()
 # -----------------------------------------------------------------------
 with st.sidebar:
     # --- Configurações Movidas para cá e acima da qtd ---
-    st.markdown("<h3 style='color: #1e3799; text-align: center;'>Configuração</h3>", unsafe_allow_html=True)
-    is_dark_mode = st.toggle("🌙 Modo Escuro", value=st.session_state.get('theme', 'light') == 'dark')
-    demo_mode = st.toggle("🧪 Modo Demo", value=st.session_state.get('demo_mode', False))
+    st.markdown("<h3 style='color: #1e3799; text-align: center;'>Configurações</h3>", unsafe_allow_html=True)
+    st.toggle("🌙 Modo Escuro", key="is_dark_mode")
+    st.toggle("🧪 Modo Demo", key="is_demo_mode")
+    demo_mode = st.session_state['is_demo_mode']
     st.markdown("<hr style='margin-top: 5px; margin-bottom: 15px;'>", unsafe_allow_html=True)
 
     qtd_produtos = st.number_input(
