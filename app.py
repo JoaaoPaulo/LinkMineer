@@ -55,12 +55,15 @@ with st.sidebar:
 
 # Estilos visuais fundamentados no Modo Branco (Padrão) ou Escuro
 bg_color = "#0e1117" if is_dark_mode else "#ffffff"
-text_color = "#f0f0f0" if is_dark_mode else "#1f2328"
-sidebar_bg = "#161b22" if is_dark_mode else "#f6f8fa"
-border_color = "#30363d" if is_dark_mode else "#d0d7de"
-card_bg = "#0d1117" if is_dark_mode else "#ffffff"
-btn_primary = "linear-gradient(90deg, #fa8231, #e84393)" if is_dark_mode else "#007bff"
-btn_text = "white"
+text_color = "#ffffff" if is_dark_mode else "#000000"
+sidebar_bg = "#161b22" if is_dark_mode else "#f8f9fa"
+border_color = "#30363d" if is_dark_mode else "#e1e4e8"
+card_bg = "#1c2128" if is_dark_mode else "#ffffff"
+
+# Estilo específico do botão "L-Border"
+btn_primary_bg = "transparent"
+btn_primary_border = "#1e3799"
+btn_primary_text = "#1e3799"
 
 st.markdown(f"""
 <style>
@@ -68,11 +71,16 @@ st.markdown(f"""
     
     html, body, [data-testid="stAppViewContainer"] {{
         background-color: {bg_color};
-        color: {text_color};
+        color: {text_color} !important;
         font-family: 'Inter', sans-serif;
     }}
 
-    /* Ocultar Menu Streamlit (3 pontos e footer) */
+    /* Forçar cor do texto globalmente */
+    [data-testid="stMarkdownContainer"] p, .stMarkdown p, label {{
+        color: {text_color} !important;
+    }}
+
+    /* Ocultar Menu Streamlit */
     #MainMenu {{visibility: hidden;}}
     footer {{visibility: hidden;}}
     header {{visibility: hidden;}}
@@ -80,70 +88,86 @@ st.markdown(f"""
     /* Centralizar Cabeçalho */
     .header-container {{
         text-align: center;
-        padding: 2rem 1rem;
+        padding: 3rem 1rem;
     }}
     .header-title {{
         font-family: 'Montserrat', sans-serif;
         font-weight: 700;
-        font-size: 3.5rem;
+        font-size: 4rem;
         margin-bottom: 0.5rem;
-        background: {btn_primary};
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
+        color: #1e3799;
     }}
     .header-subtitle {{
         font-family: 'Inter', sans-serif;
         color: #636e72;
-        font-size: 1.2rem;
+        font-size: 1.3rem;
         font-weight: 400;
     }}
 
-    /* Botão Principal */
+    /* Botão Principal Estilizado (L-Border) */
     div[data-testid="stButton"] > button[kind="primary"] {{
-        background: {btn_primary};
-        border: none;
-        color: {btn_text};
-        font-size: 1.1rem;
-        font-weight: 600;
-        border-radius: 12px;
-        padding: 0.75rem 2rem;
+        background-color: white !important;
+        border: 1px solid {btn_primary_border} !important;
+        border-left: 8px solid {btn_primary_border} !important;
+        color: {btn_primary_text} !important;
+        font-size: 1.2rem;
+        font-weight: 700;
+        border-radius: 4px;
+        padding: 0.8rem 2rem;
         width: 100%;
         transition: all 0.3s ease;
-        box-shadow: 0 4px 15px rgba(0, 123, 255, 0.2);
+        text-transform: uppercase;
+        letter-spacing: 1px;
     }}
     div[data-testid="stButton"] > button[kind="primary"]:hover {{
-        transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(0, 123, 255, 0.3);
-        opacity: 0.9;
+        background-color: {btn_primary_border} !important;
+        color: white !important;
+        box-shadow: 0 4px 12px rgba(30, 55, 153, 0.3);
     }}
 
     /* Botão Parar */
     div[data-testid="stButton"] > button[kind="secondary"] {{
         background: transparent;
-        border: 2px solid #ff4757;
-        color: #ff4757;
-        font-weight: 600;
-        border-radius: 12px;
+        border: 1px solid #d63031;
+        border-left: 8px solid #d63031;
+        color: #d63031;
+        font-weight: 700;
+        border-radius: 4px;
         width: 100%;
-        padding: 0.75rem;
+        padding: 0.8rem;
     }}
     div[data-testid="stButton"] > button[kind="secondary"]:hover {{
-        background: #ff4757;
+        background: #d63031;
         color: white;
     }}
 
-    /* Sidebar */
+    /* Sidebar Refinada */
     [data-testid="stSidebar"] {{
         background-color: {sidebar_bg};
         border-right: 1px solid {border_color};
     }}
     
-    /* Expanders */
+    /* Marketplace Cards (Expanders) */
     .stExpander {{
-        border: 1px solid {border_color} !important;
-        border-radius: 12px !important;
         background-color: {card_bg} !important;
-        margin-bottom: 10px !important;
+        border: 1px solid {border_color} !important;
+        border-radius: 8px !important;
+        margin-bottom: 12px !important;
+        overflow: hidden;
+    }}
+
+    /* Alinhamento de Imagem no Expander */
+    .mkt-label {{
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-weight: 600;
+        color: {text_color} !important;
+    }}
+    .mkt-icon {{
+        width: 20px;
+        height: 20px;
+        object-fit: contain;
     }}
 </style>
 """, unsafe_allow_html=True)
@@ -174,7 +198,8 @@ with st.sidebar:
     # ----------------------------------------------------------------
     # Mercado Livre
     # ----------------------------------------------------------------
-    with st.expander("🟡 Mercado Livre", expanded=False):
+    label_ml = '<div class="mkt-label"><img src="https://http2.mlstatic.com/frontend-assets/ml-web-navigation/ui-navigation/5.21.22/mercadolivre/favicon.svg" class="mkt-icon"> Mercado Livre</div>'
+    with st.expander(label_ml, expanded=False):
         ml_active = st.checkbox("Ativar Mercado Livre", value=True, key="ml_active_check")
         ml_cookies = st.text_area("Cookies (JSON array)", height=100, key="ml_cookies")
         ml_login_type = "Cookies (JSON)"
@@ -183,7 +208,8 @@ with st.sidebar:
     # ----------------------------------------------------------------
     # Amazon
     # ----------------------------------------------------------------
-    with st.expander("🟠 Amazon", expanded=False):
+    label_amz = '<div class="mkt-label"><img src="https://www.amazon.com/favicon.ico" class="mkt-icon"> Amazon</div>'
+    with st.expander(label_amz, expanded=False):
         amz_active = st.checkbox("Ativar Amazon", value=True, key="amz_active_check")
         amz_tag = st.text_input("Tag de afiliado (AMZ)", value=DEFAULT_AMAZON_TAG, key="amz_tag_input")
         amz_login_type = st.selectbox("Autenticação AMZ", ["Cookies (JSON)", "Credenciais"], key="amz_lt")
@@ -198,7 +224,8 @@ with st.sidebar:
     # ----------------------------------------------------------------
     # Shopee
     # ----------------------------------------------------------------
-    with st.expander("🔴 Shopee", expanded=False):
+    label_shp = '<div class="mkt-label"><img src="https://deo.shopeemobile.com/shopee/shopee-pcmall-live-sg/assets/favicon.ico" class="mkt-icon"> Shopee</div>'
+    with st.expander(label_shp, expanded=False):
         shp_active = st.checkbox("Ativar Shopee", value=True, key="shp_active_check")
         shp_aff_id = st.text_input("Affiliate ID (SHP)", value=DEFAULT_SHOPEE_ID, key="shp_aff_id_input")
         shp_login_type = st.selectbox("Autenticação SHP", ["Cookies (JSON)", "Credenciais"], key="shp_lt")
@@ -213,16 +240,20 @@ with st.sidebar:
     # ----------------------------------------------------------------
     # Outros
     # ----------------------------------------------------------------
-    with st.expander("🔵 Pichau", expanded=False):
+    label_pic = '<div class="mkt-label"><img src="https://www.pichau.com.br/favicon.ico" class="mkt-icon"> Pichau</div>'
+    with st.expander(label_pic, expanded=False):
         pic_active = st.checkbox("Ativar Pichau", value=False)
         
-    with st.expander("🟠 Kabum", expanded=False):
+    label_kab = '<div class="mkt-label"><img src="https://static.kabum.com.br/conteudo/favicon/favicon-32x32.png" class="mkt-icon"> Kabum</div>'
+    with st.expander(label_kab, expanded=False):
         kab_active = st.checkbox("Ativar Kabum", value=False)
 
-    with st.expander("🔵 Magalu", expanded=False):
+    label_mag = '<div class="mkt-label"><img src="https://v.mlcdn.com.br/favicon.ico" class="mkt-icon"> Magalu</div>'
+    with st.expander(label_mag, expanded=False):
         mag_active = st.checkbox("Ativar Magalu", value=False)
 
-    with st.expander("🦒 Girafa", expanded=False):
+    label_gir = '<div class="mkt-label"><img src="https://www.girafa.com.br/favicon.ico" class="mkt-icon"> Girafa</div>'
+    with st.expander(label_gir, expanded=False):
         gir_active = st.checkbox("Ativar Girafa", value=False)
 
 # -----------------------------------------------------------------------
