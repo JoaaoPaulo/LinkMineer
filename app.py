@@ -98,19 +98,35 @@ st.markdown(f"""
         font-weight: 600 !important;
         color: #333333 !important; /* Cinza escuro/Preto para legibilidade */
     }}
-    /* Cor do switch ligado */
+    /* [PONTO 4] Cor do switch ligado. Texto cinza escuro. */
     div[data-testid="stToggle"] > label > div > div > div {{
         background-color: {deep_blue} !important;
     }}
+    .stToggle label p {{
+        color: #444444 !important; /* Cinza escuro */
+        font-weight: 700 !important;
+    }}
 
-    /* [PONTO 2 e 4] Caixa de número e informações azul claro com borda escuro */
-    .stTextInput input, .stTextArea textarea, .stSelectbox div, .stNumberInput input {{
-        background-color: #f0f8ff !important; /* Azul bem clarinho (aliceblue) */
+    /* CAIXAS DE INFORMAÇÕES (TEXTO/NUMERO) */
+    .stTextInput input, .stTextArea textarea, .stSelectbox > div > div, .stNumberInput input {{
+        background-color: #f0f8ff !important; /* Azul claro (aliceblue) */
         color: {deep_blue} !important; /* Texto interno azul escuro */
         border: 2px solid {deep_blue} !important; /* Borda azul escuro */
         border-radius: 6px !important;
         font-weight: 600 !important;
     }}
+    
+    /* BOTOES +/- DO NUMBER INPUT (Azul Escuro com Texto Branco) */
+    button.step-up, button.step-down {{
+        background-color: {deep_blue} !important;
+        color: {white} !important;
+        border-radius: 4px !important;
+    }}
+    button.step-up:hover, button.step-down:hover {{
+        background-color: {vibrant_blue} !important;
+        color: {white} !important;
+    }}
+
     .stTextInput input:focus, .stTextArea textarea:focus, .stNumberInput input:focus {{
         border-color: {vibrant_blue} !important;
         box-shadow: 0 0 5px {vibrant_blue} !important;
@@ -175,11 +191,25 @@ st.markdown(f"""
         color: {white} !important;
     }}
 
-    /* Títulos de Expander */
+    /* Títulos de Expander - Aba Transparente, Borda Azul quando clicado/hover */
+    [data-testid="stExpander"] {{
+        border: 1px solid #d1d5db !important;
+        border-radius: 6px !important;
+        transition: all 0.2s ease;
+    }}
+    [data-testid="stExpander"]:hover, [data-testid="stExpander"]:focus-within {{
+        border: 2px solid {deep_blue} !important;
+    }}
+    [data-testid="stExpanderHeader"] {{
+        background-color: transparent !important; /* Removemos o "preto/azul" do fundo */
+    }}
     [data-testid="stExpanderHeader"] p {{
         font-weight: 700 !important;
         font-size: 1.1rem !important;
-        color: {white} !important;
+        color: {deep_blue} !important; /* Texto azul escuro em vez de branco */
+    }}
+    [data-testid="stExpanderHeader"] svg {{
+        color: {deep_blue} !important; /* Icone +/- em azul escuro */
     }}
 
     /* Ocultar elementos sem quebrar o Sidebar Toggle */
@@ -219,28 +249,24 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# Controles Superiores (Modo Escuro e Demo)
-st.markdown("<p style='text-align: center; color: #333; font-weight: 800; font-size: 1.2rem;'>Configuração</p>", unsafe_allow_html=True)
-config_col1, config_col2, config_col3 = st.columns([1,1,1])
-with config_col2:
-    sw_col1, sw_col2 = st.columns(2)
-    with sw_col1:
-        is_dark_mode = st.toggle("🌙 Escuro", value=st.session_state.get('theme', 'light') == 'dark')
-    with sw_col2:
-        demo_mode = st.toggle("🧪 Demo", value=st.session_state.get('demo_mode', False))
-
 st.divider()
 
 # -----------------------------------------------------------------------
-# Continuação da Barra lateral – Marketplaces
+# Continuação da Barra lateral – Marketplaces e Configurações
 # -----------------------------------------------------------------------
 with st.sidebar:
+    # --- Configurações Movidas para cá e acima da qtd ---
+    st.markdown("<h3 style='color: #1e3799; text-align: center;'>Configuração</h3>", unsafe_allow_html=True)
+    is_dark_mode = st.toggle("🌙 Modo Escuro", value=st.session_state.get('theme', 'light') == 'dark')
+    demo_mode = st.toggle("🧪 Modo Demo", value=st.session_state.get('demo_mode', False))
+    st.markdown("<hr style='margin-top: 5px; margin-bottom: 15px;'>", unsafe_allow_html=True)
+
     qtd_produtos = st.number_input(
         "🔢 Quantidade Mínima Desejada",
         min_value=1, max_value=5000, value=5, step=1
     )
 
-    # [PONTO 10] Espaço bem maior entre config e marketplaces
+    # Espaço bem maior entre config e marketplaces
     st.markdown("<br><br><br>", unsafe_allow_html=True)
     st.markdown("<h3 style='color: #1e3799; text-align: center;'>Marketplaces</h3>", unsafe_allow_html=True)
 
