@@ -176,17 +176,23 @@ def mine_ml(page, config, q, ps, pe, stop_event=None):
                 try:
                     # Produto Link
                     link_el = card.query_selector("a[href*='mercadolivre.com.br']")
-                    if not link_el: continue
+                    if not link_el:
+                        _log(q, "ML DEBUG: Card ignorado - Link do produto não encontrado (a[href*='mercadolivre.com.br']).")
+                        continue
                     p_url = _clean_url(link_el.get_attribute("href"))
                     
-                    if p_url in processed_links: continue
+                    if p_url in processed_links:
+                        _log(q, "ML DEBUG: Card ignorado - Produto já processado.")
+                        continue
                     processed_links.add(p_url)
 
                     card.scroll_into_view_if_needed()
                     
                     # Botão Compartilhar
                     share_btn = card.query_selector("button:has-text('Compartilhar'), .andes-button--share")
-                    if not share_btn: continue
+                    if not share_btn:
+                        _log(q, "ML DEBUG: Card ignorado - Botão Compartilhar não encontrado neste card.")
+                        continue
                     share_btn.click()
                     
                     # Clicou, não espera estático 2.5s. Esperamos ativamente o pop-up aparecer pelas classes:
