@@ -262,6 +262,7 @@ def mine_girafa(page, config, q, ps, pe, stop_event=None):
 # Motor Principal
 # -----------------------------------------------------------------------
 
+def run_mining(config):
     q = queue.Queue()
     stop_event = config.get("stop_event")
     
