@@ -37,27 +37,15 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# -----------------------------------------------------------------------
-# Barra lateral – Configurações e Dark Mode
-# -----------------------------------------------------------------------
-with st.sidebar:
-    st.header("⚙️ Configurações")
-    
-    # Toggle de Modo Escuro (único controle de tema)
-    is_dark_mode = st.toggle("🌙 Modo Escuro", value=False)
-    
-    # Modo Demo: não abre navegador, usa dados fictícios
-    demo_mode = st.toggle(
-        "🧪 Modo Demo",
-        value=False,
-        help="Usa produtos de exemplo sem abrir o Chrome."
-    )
+# Removemos os toggles da sidebar aqui, pois eles foram movidos para a área central (Controles Superiores)
+# [PONTO 3 e 9]
 
 # Paleta de Cores LinkMineer Premium
 deep_blue = "#1e3799"
 vibrant_blue = "#0056b3"
 white = "#ffffff"
 black = "#000000"
+is_dark_mode = st.session_state.get('theme', 'light') == 'dark'
 text_primary = black if not is_dark_mode else white
 bg_main = white if not is_dark_mode else "#0e1117"
 sidebar_bg = "#f0f2f6" if not is_dark_mode else "#161b22"
@@ -96,26 +84,54 @@ st.markdown(f"""
         font-weight: 700 !important;
     }}
 
-    /* Swithes (Interruptores) e Checkboxes visíveis */
-    .stCheckbox label p {{
+    /* [PONTO 8] Tira a barra preta de cima da tela */
+    header[data-testid="stHeader"] {{
+        background-color: transparent !important;
+        border-bottom: none !important;
+        box-shadow: none !important;
+        color: transparent !important;
+    }}
+    .stApp > header {{ display: none !important; }}
+
+    /* [PONTO 3 e 7] Interruptores e Textos de Configuração visíveis */
+    .stCheckbox label p, .stToggle label p, div[data-testid="stMarkdownContainer"] p {{
         font-weight: 600 !important;
-        color: {text_primary} !important;
+        color: #333333 !important; /* Cinza escuro/Preto para legibilidade */
+    }}
+    /* Cor do switch ligado */
+    div[data-testid="stToggle"] > label > div > div > div {{
+        background-color: {deep_blue} !important;
     }}
 
-    /* Título e Subtítulo Centralizados */
+    /* [PONTO 2 e 4] Caixa de número e informações azul claro com borda escuro */
+    .stTextInput input, .stTextArea textarea, .stSelectbox div, .stNumberInput input {{
+        background-color: #f0f8ff !important; /* Azul bem clarinho (aliceblue) */
+        color: {deep_blue} !important; /* Texto interno azul escuro */
+        border: 2px solid {deep_blue} !important; /* Borda azul escuro */
+        border-radius: 6px !important;
+        font-weight: 600 !important;
+    }}
+    .stTextInput input:focus, .stTextArea textarea:focus, .stNumberInput input:focus {{
+        border-color: {vibrant_blue} !important;
+        box-shadow: 0 0 5px {vibrant_blue} !important;
+    }}
+
+    /* [PONTO 6] Título do LinkMineer (Dark Blue + Light Blue) */
     .header-container {{
         text-align: center;
-        padding: 3rem 1rem;
+        padding: 3rem 1rem 1rem 1rem;
     }}
-    .header-title {{
+    .logo-container {{
         font-family: 'Montserrat', sans-serif !important;
         font-weight: 800 !important;
         font-size: 6rem !important;
-        color: {deep_blue} !important;
         margin-bottom: 0px !important;
         line-height: 0.9 !important;
         letter-spacing: -2px !important;
     }}
+    .logo-link {{ color: {deep_blue} !important; }}
+    .logo-mineer {{ color: #4facfe !important; /* Azul mais claro */ }}
+
     .header-subtitle {{
         font-family: 'Inter', sans-serif !important;
         font-weight: 600 !important;
@@ -124,14 +140,14 @@ st.markdown(f"""
         margin-top: 5px !important;
     }}
 
-    /* BOTOES MODERNOS SUAVES */
+    /* [PONTO 1 e 5] BOTOES BLUE SEM PRETO / Gerar Planilha Visível */
     div[data-testid="stButton"] > button[kind="primary"], 
     div[data-testid="stDownloadButton"] > button {{
-        background-color: {deep_blue} !important;
-        color: {white} !important;
-        border: none !important;
+        background-color: {white} !important;
+        color: {deep_blue} !important;
+        border: 2px solid {deep_blue} !important;
         font-size: 1.2rem !important;
-        font-weight: 700 !important;
+        font-weight: 800 !important;
         border-radius: 6px !important;
         padding: 0.8rem 2rem !important;
         width: 100% !important;
@@ -139,10 +155,9 @@ st.markdown(f"""
     }}
     div[data-testid="stButton"] > button[kind="primary"]:hover,
     div[data-testid="stDownloadButton"] > button:hover {{
-        background-color: {vibrant_blue} !important;
+        background-color: {deep_blue} !important;
         color: {white} !important;
-        opacity: 0.9 !important;
-        transform: translateY(-2px) !important;
+        opacity: 0.95 !important;
     }}
 
     /* Botão de Parar (Vermelho Leve) */
@@ -167,12 +182,25 @@ st.markdown(f"""
         color: {white} !important;
     }}
 
-    /* Barra de progresso padrao */
-
-    /* Não ocultar a toolbar porque quebra o toggle da sidebar */
+    /* Ocultar elementos sem quebrar o Sidebar Toggle */
     footer {{visibility: hidden;}}
     
+    /* [PONTO 11] Progress e Resultados com tema Azul */
+    .stProgress > div > div > div > div {{
+        background-color: {vibrant_blue} !important;
+    }}
+    .stSuccess {{
+        background-color: #e3f2fd !important;
+        color: {deep_blue} !important;
+        border-left-color: {deep_blue} !important;
+    }}
+    .stDataFrame {{
+        border: 1px solid {deep_blue} !important;
+        border-radius: 8px !important;
+    }}
+    
     /* Espaçamento Reduzido (Próximo) */
+
     .stVerticalBlock {{
         gap: 0.5rem !important;
     }}
@@ -184,10 +212,22 @@ st.markdown(f"""
 # -----------------------------------------------------------------------
 st.markdown("""
 <div class="header-container">
-    <div class="header-title">LinkMineer</div>
+    <div class="logo-container">
+        <span class="logo-link">Link</span><span class="logo-mineer">Mineer</span>
+    </div>
     <div class="header-subtitle">Minerador inteligente de links de afiliados • Multi-Marketplace</div>
 </div>
 """, unsafe_allow_html=True)
+
+# Controles Superiores (Modo Escuro e Demo)
+st.markdown("<p style='text-align: center; color: #333; font-weight: 800; font-size: 1.2rem;'>Configuração</p>", unsafe_allow_html=True)
+config_col1, config_col2, config_col3 = st.columns([1,1,1])
+with config_col2:
+    sw_col1, sw_col2 = st.columns(2)
+    with sw_col1:
+        is_dark_mode = st.toggle("🌙 Escuro", value=st.session_state.get('theme', 'light') == 'dark')
+    with sw_col2:
+        demo_mode = st.toggle("🧪 Demo", value=st.session_state.get('demo_mode', False))
 
 st.divider()
 
@@ -196,11 +236,13 @@ st.divider()
 # -----------------------------------------------------------------------
 with st.sidebar:
     qtd_produtos = st.number_input(
-        "🔢 Produtos por marketplace",
+        "🔢 Quantidade Mínima Desejada",
         min_value=1, max_value=5000, value=5, step=1
     )
 
-    st.markdown("<br>", unsafe_allow_html=True)
+    # [PONTO 10] Espaço bem maior entre config e marketplaces
+    st.markdown("<br><br><br>", unsafe_allow_html=True)
+    st.markdown("<h3 style='color: #1e3799; text-align: center;'>Marketplaces</h3>", unsafe_allow_html=True)
 
     # ----------------------------------------------------------------
     # Mercado Livre
