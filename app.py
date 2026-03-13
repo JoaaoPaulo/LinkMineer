@@ -99,16 +99,6 @@ st.markdown(f"""
     }}
     .stApp > header {{ display: none !important; }}
 
-    /* [PONTO 3 e 7] Interruptores e Textos de Configuração visíveis */
-    [data-testid="stToggle"] p, [data-testid="stCheckbox"] p, div[data-baseweb="checkbox"] p {{
-        font-weight: 700 !important;
-        color: #444444 !important; /* Cinza escuro */
-    }}
-    /* [PONTO 4] Cor do switch ligado. */
-    div[data-testid="stToggle"] > label > div > div > div {{
-        background-color: {deep_blue} !important;
-    }}
-
     /* CAIXAS DE INFORMAÇÕES (TEXTO/NUMERO) */
     .stTextInput input, .stTextArea textarea, .stSelectbox > div > div, .stNumberInput input {{
         background-color: #f0f8ff !important; /* Azul claro (aliceblue) */
@@ -215,22 +205,28 @@ st.markdown(f"""
         border: 2px solid {deep_blue} !important;
         background-color: transparent !important;
     }}
+    
+    /* ZERA FUNDO DO HEADER DO EXPANDER EM TODAS CLASSES DO STREAMLIT */
     [data-testid="stExpanderHeader"],
     [data-testid="stExpanderHeader"]:hover,
     [data-testid="stExpanderHeader"]:active,
     [data-testid="stExpanderHeader"]:focus,
-    [data-testid="stExpanderHeader"]:focus-within {{
-        background-color: transparent !important; /* Força transparência em TODOS os estados */
+    [data-testid="stExpanderHeader"]:focus-within,
+    .streamlit-expanderHeader,
+    .streamlit-expanderHeader:hover,
+    div[role="button"][aria-expanded] {{
+        background-color: transparent !important; /* Força transparência contra o preto do back */
     }}
-    [data-testid="stExpanderHeader"] p {{
+    
+    [data-testid="stExpanderHeader"] p, .streamlit-expanderHeader div {{
         font-weight: 700 !important;
         font-size: 1.1rem !important;
         color: {text_blue} !important; /* Adapta ao dark mode */
     }}
-    [data-testid="stExpanderHeader"] svg {{
+    [data-testid="stExpanderHeader"] svg, .streamlit-expanderHeader svg {{
         color: {text_blue} !important; 
     }}
-    [data-testid="stExpanderDetails"] {{
+    [data-testid="stExpanderDetails"], .streamlit-expanderContent {{
         background-color: transparent !important;
     }}
 
@@ -277,19 +273,15 @@ st.divider()
 # Continuação da Barra lateral – Marketplaces e Configurações
 # -----------------------------------------------------------------------
 with st.sidebar:
-    # --- Configurações Movidas para cá e acima da qtd ---
-    st.markdown(f"<h3 style='color: {text_blue}; text-align: center;'>Configurações</h3>", unsafe_allow_html=True)
-    st.toggle("🌙 Modo Escuro", key="is_dark_mode")
-    st.toggle("🧪 Modo Demo", key="is_demo_mode")
-    demo_mode = st.session_state['is_demo_mode']
-    st.markdown("<hr style='margin-top: 5px; margin-bottom: 15px;'>", unsafe_allow_html=True)
+    # A seção "Configurações" e os interruptores foram removidos conforme solicitado.
+    demo_mode = st.session_state['is_demo_mode'] # Oculto mas retido p/ back-end no app.py
 
     qtd_produtos = st.number_input(
         "🔢 Quantidade Mínima Desejada",
         min_value=1, max_value=5000, value=5, step=1
     )
 
-    # Espaço bem maior entre config e marketplaces
+    # Espaço entre config e marketplaces
     st.markdown("<br><br><br>", unsafe_allow_html=True)
     st.markdown(f"<h3 style='color: {text_blue}; text-align: center;'>Marketplaces</h3>", unsafe_allow_html=True)
 
