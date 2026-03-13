@@ -53,132 +53,170 @@ with st.sidebar:
         help="Usa produtos de exemplo sem abrir o Chrome."
     )
 
-# Estilos visuais fundamentados no Modo Branco (Padrão) ou Escuro
-bg_color = "#ffffff" if not is_dark_mode else "#0e1117"
-text_color = "#000000" if not is_dark_mode else "#ffffff"
-sidebar_bg = "#f8f9fa" if not is_dark_mode else "#161b22"
-border_color = "#d1d5db" if not is_dark_mode else "#30363d"
-card_bg = "#ffffff" if not is_dark_mode else "#1c2128"
-btn_primary_border = "#1e3799"
+# Paleta de Cores LinkMineer Premium
+deep_blue = "#1e3799"
+vibrant_blue = "#0056b3"
+white = "#ffffff"
+black = "#000000"
+text_primary = black if not is_dark_mode else white
+bg_main = white if not is_dark_mode else "#0e1117"
+sidebar_bg = "#f0f2f6" if not is_dark_mode else "#161b22"
 
 st.markdown(f"""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&family=Inter:wght@400;600&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@700;800&family=Inter:wght@400;600;700&display=swap');
     
-    /* Configuração Global de Cores e Fontes */
+    /* Reset e Fundo Global */
     .stApp {{
-        background-color: {bg_color} !important;
-        color: {text_color} !important;
+        background-color: {bg_main} !important;
+        color: {text_primary} !important;
         font-family: 'Inter', sans-serif !important;
     }}
 
-    /* REFORÇO DE CONTRASTE EXTREMO: Forçar preto em tudo no modo claro */
+    /* REFORÇO DE VISIBILIDADE EM TUDO */
     .stApp *, [data-testid="stSidebar"] *, .stMarkdown, .stText, label, p, span {{
-        color: {text_color} !important;
+        color: {text_primary} !important;
     }}
 
-    /* Ocultar Menu Streamlit */
-    #MainMenu {{visibility: hidden;}}
-    footer {{visibility: hidden;}}
-    header {{visibility: hidden;}}
+    /* Sidebar - Manter Toggle visível */
+    [data-testid="stSidebar"] {{
+        background-color: {sidebar_bg} !important;
+        border-right: 2px solid {deep_blue} !important;
+    }}
+    
+    /* Expander (+/-) e Labels dos marketplaces */
+    [data-testid="stExpanderHeader"] {{
+        background-color: {deep_blue} !important;
+        border-radius: 4px !important;
+        padding: 5px 10px !important;
+        margin-bottom: 2px !important;
+    }}
+    [data-testid="stExpanderHeader"] * {{
+        color: {white} !important; /* Texto do título e icone +/- em branco */
+        font-weight: 700 !important;
+    }}
 
-    /* Centralizar Cabeçalho */
+    /* Swithes (Interruptores) e Checkboxes visíveis */
+    .stCheckbox label p {{
+        font-weight: 600 !important;
+        color: {text_primary} !important;
+    }}
+
+    /* Título e Subtítulo Centralizados */
     .header-container {{
         text-align: center;
-        padding: 4rem 1rem;
+        padding: 3rem 1rem;
     }}
     .header-title {{
         font-family: 'Montserrat', sans-serif !important;
-        font-weight: 700 !important;
-        font-size: 5rem !important;
-        margin-bottom: 0.5rem !important;
-        color: #1e3799 !important;
+        font-weight: 800 !important;
+        font-size: 6rem !important;
+        color: {deep_blue} !important;
+        margin-bottom: 0px !important;
+        line-height: 0.9 !important;
+        letter-spacing: -2px !important;
     }}
     .header-subtitle {{
         font-family: 'Inter', sans-serif !important;
-        color: #4b5563 !important;
-        font-size: 1.5rem !important;
-        font-weight: 400 !important;
+        font-weight: 600 !important;
+        font-size: 1.8rem !important;
+        color: {vibrant_blue} !important;
+        margin-top: 5px !important;
     }}
 
-    /* Botão Principal Estilizado (L-Border) */
-    div[data-testid="stButton"] > button[kind="primary"] {{
-        background-color: white !important;
-        border: 2px solid {btn_primary_border} !important;
-        border-left: 12px solid {btn_primary_border} !important;
-        color: {btn_primary_border} !important;
+    /* Botão Principal e Download Estilizados (L-Border) */
+    div[data-testid="stButton"] > button[kind="primary"], 
+    div[data-testid="stDownloadButton"] > button {{
+        background-color: {deep_blue} !important;
+        color: {white} !important;
+        border: 2px solid {white} !important;
+        border-left: 15px solid {white} !important;
         font-size: 1.4rem !important;
         font-weight: 800 !important;
-        border-radius: 2px !important;
-        padding: 1.2rem 2rem !important;
+        border-radius: 4px !important;
+        padding: 1rem 2rem !important;
         width: 100% !important;
-        transition: all 0.2s ease !important;
+        transition: all 0.3s ease !important;
         text-transform: uppercase !important;
-        letter-spacing: 2px !important;
-        cursor: pointer !important;
+        box-shadow: 0 4px 15px rgba(30, 55, 153, 0.4);
     }}
-    div[data-testid="stButton"] > button[kind="primary"]:hover {{
-        background-color: {btn_primary_border} !important;
-        color: white !important;
-        transform: translateX(8px) !important;
+    div[data-testid="stButton"] > button[kind="primary"]:hover,
+    div[data-testid="stDownloadButton"] > button:hover {{
+        background-color: {white} !important;
+        color: {deep_blue} !important;
+        border: 2px solid {deep_blue} !important;
+        border-left: 15px solid {deep_blue} !important;
+        transform: scale(1.02) !important;
     }}
 
-    /* Botão Parar */
+    /* Botão de Parar (Vermelho/Branco) */
     div[data-testid="stButton"] > button[kind="secondary"] {{
-        background: white !important;
-        border: 2px solid #d63031 !important;
-        border-left: 12px solid #d63031 !important;
-        color: #d63031 !important;
+        background-color: #d63031 !important;
+        color: {white} !important;
+        border: 2px solid {white} !important;
+        border-left: 15px solid {white} !important;
         font-weight: 800 !important;
-        border-radius: 2px !important;
+        border-radius: 4px !important;
         width: 100% !important;
-        padding: 1.2rem !important;
         text-transform: uppercase !important;
-        letter-spacing: 1px !important;
-        transition: all 0.2s ease !important;
     }}
     div[data-testid="stButton"] > button[kind="secondary"]:hover {{
-        background: #d63031 !important;
-        color: white !important;
-        transform: translateX(8px) !important;
-    }}
-
-    /* Sidebar Refinada */
-    [data-testid="stSidebar"] {{
-        background-color: {sidebar_bg} !important;
-        border-right: 2px solid {border_color} !important;
-    }}
-    
-    /* Marketplace Cards (Expanders) */
-    .stExpander {{
-        background-color: {card_bg} !important;
-        border: 1px solid {border_color} !important;
-        border-radius: 4px !important;
-        margin-bottom: 15px !important;
-    }}
-
-    /* Inputs e Áreas de texto */
-    .stTextInput input, .stTextArea textarea, .stSelectbox div, .stNumberInput input {{
-        background-color: {card_bg} !important;
-        color: {text_color} !important;
-        border: 1px solid {border_color} !important;
+        background-color: {white} !important;
+        color: #d63031 !important;
+        border-left: 15px solid #d63031 !important;
     }}
 
     /* Títulos de Expander */
     [data-testid="stExpanderHeader"] p {{
         font-weight: 700 !important;
         font-size: 1.1rem !important;
-        color: {text_color} !important;
+        color: {white} !important;
     }}
 
-    /* Ajuste de logos dentro do content */
-    .mkt-header {{
-        display: flex;
-        align-items: center;
-        gap: 15px;
-        margin-bottom: 15px;
-        padding-bottom: 10px;
-        border-bottom: 1px solid {border_color};
+    /* ANIMAÇÃO BARRA DE PROGRESSO COM PESSOA CORRENDO */
+    .progress-track {{
+        width: 100%;
+        height: 14px;
+        background: {white};
+        border: 2px solid {deep_blue};
+        border-radius: 20px;
+        position: relative;
+        overflow: visible;
+        margin: 50px 0 30px 0;
+    }}
+    .progress-fill {{
+        height: 100%;
+        background: {deep_blue};
+        border-radius: 20px;
+        transition: width 0.3s ease;
+    }}
+    .runner-container {{
+        position: absolute;
+        bottom: 14px;
+        left: 0;
+        transition: left 0.3s ease;
+        z-index: 99;
+    }}
+    .runner-silhouette {{
+        font-size: 60px; /* Bem alto */
+        line-height: 1;
+        display: inline-block;
+        filter: grayscale(1) brightness(0) opacity(0.8);
+        transform-origin: bottom center;
+        animation: runner-move 0.5s infinite alternate;
+    }}
+    @keyframes runner-move {{
+        from {{ transform: skewX(-5deg) translateY(0); }}
+        to {{ transform: skewX(5deg) translateY(-5px); }}
+    }}
+
+    /* Ocultar elementos sem quebrar o Sidebar Toggle */
+    [data-testid="stToolbar"] {{visibility: hidden;}}
+    footer {{visibility: hidden;}}
+    
+    /* Espaçamento Reduzido (Próximo) */
+    .stVerticalBlock {{
+        gap: 0.5rem !important;
     }}
 </style>
 """, unsafe_allow_html=True)
@@ -209,8 +247,7 @@ with st.sidebar:
     # ----------------------------------------------------------------
     # Mercado Livre
     # ----------------------------------------------------------------
-    with st.expander("Mercado Livre", expanded=False):
-        st.markdown('<div class="mkt-header"><img src="https://http2.mlstatic.com/frontend-assets/ml-web-navigation/ui-navigation/5.21.22/mercadolivre/favicon.svg" width="40"> <b>Mercado Livre</b></div>', unsafe_allow_html=True)
+    with st.expander("MERCADO LIVRE", expanded=False):
         ml_active = st.checkbox("Ativar Mercado Livre", value=True, key="ml_active_check")
         ml_cookies = st.text_area("Cookies (JSON array)", height=100, key="ml_cookies")
         ml_login_type = "Cookies (JSON)"
@@ -219,8 +256,7 @@ with st.sidebar:
     # ----------------------------------------------------------------
     # Amazon
     # ----------------------------------------------------------------
-    with st.expander("Amazon", expanded=False):
-        st.markdown('<div class="mkt-header"><img src="https://www.amazon.com/favicon.ico" width="40"> <b>Amazon</b></div>', unsafe_allow_html=True)
+    with st.expander("AMAZON", expanded=False):
         amz_active = st.checkbox("Ativar Amazon", value=True, key="amz_active_check")
         amz_tag = st.text_input("Tag de afiliado (AMZ)", value=DEFAULT_AMAZON_TAG, key="amz_tag_input")
         amz_login_type = st.selectbox("Autenticação AMZ", ["Cookies (JSON)", "Credenciais"], key="amz_lt")
@@ -235,8 +271,7 @@ with st.sidebar:
     # ----------------------------------------------------------------
     # Shopee
     # ----------------------------------------------------------------
-    with st.expander("Shopee", expanded=False):
-        st.markdown('<div class="mkt-header"><img src="https://deo.shopeemobile.com/shopee/shopee-pcmall-live-sg/assets/favicon.ico" width="40"> <b>Shopee</b></div>', unsafe_allow_html=True)
+    with st.expander("SHOPEE", expanded=False):
         shp_active = st.checkbox("Ativar Shopee", value=True, key="shp_active_check")
         shp_aff_id = st.text_input("Affiliate ID (SHP)", value=DEFAULT_SHOPEE_ID, key="shp_aff_id_input")
         shp_login_type = st.selectbox("Autenticação SHP", ["Cookies (JSON)", "Credenciais"], key="shp_lt")
@@ -251,20 +286,16 @@ with st.sidebar:
     # ----------------------------------------------------------------
     # Outros
     # ----------------------------------------------------------------
-    with st.expander("Pichau", expanded=False):
-        st.markdown('<div class="mkt-header"><img src="https://www.pichau.com.br/favicon.ico" width="30"> <b>Pichau</b></div>', unsafe_allow_html=True)
+    with st.expander("PICHAU", expanded=False):
         pic_active = st.checkbox("Ativar Pichau", value=False)
         
-    with st.expander("Kabum", expanded=False):
-        st.markdown('<div class="mkt-header"><img src="https://static.kabum.com.br/conteudo/favicon/favicon-32x32.png" width="30"> <b>Kabum</b></div>', unsafe_allow_html=True)
+    with st.expander("KABUM", expanded=False):
         kab_active = st.checkbox("Ativar Kabum", value=False)
 
-    with st.expander("Magalu", expanded=False):
-        st.markdown('<div class="mkt-header"><img src="https://v.mlcdn.com.br/favicon.ico" width="30"> <b>Magalu</b></div>', unsafe_allow_html=True)
+    with st.expander("MAGALU", expanded=False):
         mag_active = st.checkbox("Ativar Magalu", value=False)
 
-    with st.expander("Girafa", expanded=False):
-        st.markdown('<div class="mkt-header"><img src="https://www.girafa.com.br/favicon.ico" width="30"> <b>Girafa</b></div>', unsafe_allow_html=True)
+    with st.expander("GIRAFA", expanded=False):
         gir_active = st.checkbox("Ativar Girafa", value=False)
 
 # -----------------------------------------------------------------------
@@ -366,9 +397,23 @@ if start_btn:
             "Os produtos abaixo são fictícios, usados apenas para testar a interface."
         )
 
-    # Barra de progresso e status
+    # Barra de progresso e status (CUSTOMIZADA)
     st.markdown("### ⏳ Progresso da Mineração")
-    progress_bar = st.progress(0.0)
+    progress_placeholder = st.empty()
+    
+    def update_custom_progress(pct):
+        render_pct = int(pct * 100)
+        progress_placeholder.markdown(f"""
+            <div class="progress-track">
+                <div class="runner-container" style="left: calc({render_pct}% - 20px);">
+                    <span class="runner-silhouette">🏃‍♂️</span>
+                </div>
+                <div class="progress-fill" style="width: {render_pct}%;"></div>
+            </div>
+            <p style="text-align: right; font-weight: 700; color: {deep_blue}; margin-top: -10px;">{render_pct}%</p>
+        """, unsafe_allow_html=True)
+
+    update_custom_progress(0.0)
     status_text = st.empty()
 
     # Painel de logs detalhados
@@ -390,7 +435,7 @@ if start_btn:
             # 1. Trata Progresso
             if "progress" in update:
                 val = min(float(update["progress"]), 1.0)
-                progress_bar.progress(val)
+                update_custom_progress(val)
                 if msg:
                     status_text.markdown(f"**{msg}**")
             
@@ -409,9 +454,9 @@ if start_btn:
 
         if st.session_state.stop_event.is_set():
             status_text.markdown("🛑 **Mineração parada pelo usuário!**")
-            progress_bar.progress(1.0)
+            update_custom_progress(1.0)
         else:
-            progress_bar.progress(1.0)
+            update_custom_progress(1.0)
             status_text.markdown("✅ **Mineração concluída!**")
 
     except Exception as e:
