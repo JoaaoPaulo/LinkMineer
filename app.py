@@ -58,6 +58,7 @@ bg_color = "#ffffff" if not is_dark_mode else "#0e1117"
 text_color = "#000000" if not is_dark_mode else "#ffffff"
 sidebar_bg = "#f8f9fa" if not is_dark_mode else "#161b22"
 border_color = "#d1d5db" if not is_dark_mode else "#30363d"
+card_bg = "#ffffff" if not is_dark_mode else "#1c2128"
 btn_primary_border = "#1e3799"
 
 st.markdown(f"""
@@ -137,12 +138,26 @@ st.markdown(f"""
         transition: all 0.2s ease !important;
     }}
     div[data-testid="stButton"] > button[kind="secondary"]:hover {{
-    
-    .header-subtitle {{
-        color: #636e72 !important;
+        background: #d63031 !important;
+        color: white !important;
+        transform: translateX(8px) !important;
     }}
 
-    /* Inputs e Áreas de texto precisam de fundo contrastante no modo escuro */
+    /* Sidebar Refinada */
+    [data-testid="stSidebar"] {{
+        background-color: {sidebar_bg} !important;
+        border-right: 2px solid {border_color} !important;
+    }}
+    
+    /* Marketplace Cards (Expanders) */
+    .stExpander {{
+        background-color: {card_bg} !important;
+        border: 1px solid {border_color} !important;
+        border-radius: 4px !important;
+        margin-bottom: 15px !important;
+    }}
+
+    /* Inputs e Áreas de texto */
     .stTextInput input, .stTextArea textarea, .stSelectbox div, .stNumberInput input {{
         background-color: {card_bg} !important;
         color: {text_color} !important;
@@ -150,13 +165,20 @@ st.markdown(f"""
     }}
 
     /* Títulos de Expander */
-    .mkt-label {{
+    [data-testid="stExpanderHeader"] p {{
+        font-weight: 700 !important;
+        font-size: 1.1rem !important;
         color: {text_color} !important;
     }}
-    .mkt-icon {{
-        width: 20px;
-        height: 20px;
-        object-fit: contain;
+
+    /* Ajuste de logos dentro do content */
+    .mkt-header {{
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        margin-bottom: 15px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid {border_color};
     }}
 </style>
 """, unsafe_allow_html=True)
