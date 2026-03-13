@@ -214,19 +214,20 @@ st.markdown(f"""
     [data-testid="stExpanderHeader"]:focus-within,
     .streamlit-expanderHeader,
     .streamlit-expanderHeader:hover,
-    div[role="button"][aria-expanded] {{
+    div[role="button"][aria-expanded],
+    summary, summary:hover, summary:focus, summary:active {{
         background-color: transparent !important; /* Força transparência contra o preto do back */
     }}
     
-    [data-testid="stExpanderHeader"] p, .streamlit-expanderHeader div {{
+    [data-testid="stExpanderHeader"] p, .streamlit-expanderHeader div, summary p, summary span {{
         font-weight: 700 !important;
         font-size: 1.1rem !important;
         color: {text_blue} !important; /* Adapta ao dark mode */
     }}
-    [data-testid="stExpanderHeader"] svg, .streamlit-expanderHeader svg {{
+    [data-testid="stExpanderHeader"] svg, .streamlit-expanderHeader svg, summary svg {{
         color: {text_blue} !important; 
     }}
-    [data-testid="stExpanderDetails"], .streamlit-expanderContent {{
+    [data-testid="stExpanderDetails"], .streamlit-expanderContent, details {{
         background-color: transparent !important;
     }}
 
