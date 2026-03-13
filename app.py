@@ -119,13 +119,23 @@ st.markdown(f"""
     }}
     
     /* BOTOES +/- DO NUMBER INPUT (Azul Escuro com Texto Branco) */
-    button.step-up, button.step-down {{
+    [data-testid="stNumberInputStepUp"], [data-testid="stNumberInputStepDown"],
+    [data-testid="stNumberInput"] button {{
         background-color: {deep_blue} !important;
         color: {white} !important;
         border-radius: 4px !important;
     }}
-    button.step-up:hover, button.step-down:hover {{
+    [data-testid="stNumberInputStepUp"]:hover, [data-testid="stNumberInputStepDown"]:hover,
+    [data-testid="stNumberInput"] button:hover {{
         background-color: {vibrant_blue} !important;
+        color: {white} !important;
+        opacity: 0.9 !important;
+    }}
+    
+    /* Garantindo que o ícone do botão +/- seja branco */
+    [data-testid="stNumberInputStepUp"] svg, [data-testid="stNumberInputStepDown"] svg,
+    [data-testid="stNumberInput"] button svg {{
+        fill: {white} !important;
         color: {white} !important;
     }}
 
@@ -195,12 +205,14 @@ st.markdown(f"""
 
     /* Títulos de Expander - Aba Transparente, Borda Azul quando clicado/hover */
     [data-testid="stExpander"] {{
+        background-color: transparent !important;
         border: 1px solid #d1d5db !important;
         border-radius: 6px !important;
         transition: all 0.2s ease;
     }}
     [data-testid="stExpander"]:hover, [data-testid="stExpander"]:focus-within {{
         border: 2px solid {deep_blue} !important;
+        background-color: transparent !important;
     }}
     [data-testid="stExpanderHeader"] {{
         background-color: transparent !important; /* Removemos o "preto/azul" do fundo */
@@ -212,6 +224,9 @@ st.markdown(f"""
     }}
     [data-testid="stExpanderHeader"] svg {{
         color: {deep_blue} !important; /* Icone +/- em azul escuro */
+    }}
+    [data-testid="stExpanderDetails"] {{
+        background-color: transparent !important;
     }}
 
     /* Ocultar elementos sem quebrar o Sidebar Toggle */
