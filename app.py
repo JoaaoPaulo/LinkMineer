@@ -397,55 +397,55 @@ if start_btn:
 results = st.session_state.results
 
 if results:
-        # Cria o DataFrame com as colunas padrão do projeto
-        df = pd.DataFrame(results, columns=["marketplace", "link_produto", "link_afiliado"])
+    # Cria o DataFrame com as colunas padrão do projeto
+    df = pd.DataFrame(results, columns=["marketplace", "link_produto", "link_afiliado"])
 
-        st.success(f"🎉 **{len(df)} links coletados** em {df['marketplace'].nunique()} marketplace(s).")
+    st.success(f"🎉 **{len(df)} links coletados** em {df['marketplace'].nunique()} marketplace(s).")
 
-        # Resumo por marketplace
-        summary = df.groupby("marketplace").size().reset_index(name="qtd_coletada")
-        st.dataframe(summary, width="stretch", hide_index=True)
+    # Resumo por marketplace
+    summary = df.groupby("marketplace").size().reset_index(name="qtd_coletada")
+    st.dataframe(summary, width="stretch", hide_index=True)
 
-        # Tabela completa (expandida pelo usuário)
-        with st.expander("📋 Ver todos os links coletados"):
-            st.dataframe(df, width="stretch", hide_index=True)
+    # Tabela completa (expandida pelo usuário)
+    with st.expander("📋 Ver todos os links coletados"):
+        st.dataframe(df, width="stretch", hide_index=True)
 
-        st.markdown("### ⬇️ Baixar Planilha")
+    st.markdown("### ⬇️ Baixar Planilha")
 
-        # Gera CSV em memória (não salva em disco)
-        csv_data = df.to_csv(index=False).encode("utf-8")
+    # Gera CSV em memória (não salva em disco)
+    csv_data = df.to_csv(index=False).encode("utf-8")
 
-        # Gera XLSX em memória usando openpyxl
-        xlsx_buffer = io.BytesIO()
-        with pd.ExcelWriter(xlsx_buffer, engine="openpyxl") as writer:
-            df.to_excel(writer, index=False, sheet_name="Links Afiliados")
-        xlsx_data = xlsx_buffer.getvalue()
+    # Gera XLSX em memória usando openpyxl
+    xlsx_buffer = io.BytesIO()
+    with pd.ExcelWriter(xlsx_buffer, engine="openpyxl") as writer:
+        df.to_excel(writer, index=False, sheet_name="Links Afiliados")
+    xlsx_data = xlsx_buffer.getvalue()
 
-        # Botões de download lado a lado
-        dl_col1, dl_col2 = st.columns(2)
-        with dl_col1:
-            st.download_button(
-                label="⬇️ Baixar CSV",
-                data=csv_data,
-                file_name="links_afiliados.csv",
-                mime="text/csv",
-                width="stretch",
-            )
-        with dl_col2:
-            st.download_button(
-                label="⬇️ Baixar XLSX",
-                data=xlsx_data,
-                file_name="links_afiliados.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                width="stretch",
-            )
-
-    else:
-        # Nenhum produto coletado — orienta o usuário
-        st.warning(
-            "⚠️ **Nenhum link foi coletado.** Possíveis causas:\n\n"
-            "- Os marketplaces bloquearam o acesso (captcha / bot detection)\n"
-            "- Credenciais ou cookies inválidos ou expirados\n"
-            "- Seletores de página desatualizados (layout do site mudou)\n\n"
-            "💡 Tente o **Modo Demo** para confirmar que a interface e o download funcionam corretamente."
+    # Botões de download lado a lado
+    dl_col1, dl_col2 = st.columns(2)
+    with dl_col1:
+        st.download_button(
+            label="⬇️ Baixar CSV",
+            data=csv_data,
+            file_name="links_afiliados.csv",
+            mime="text/csv",
+            width="stretch",
         )
+    with dl_col2:
+        st.download_button(
+            label="⬇️ Baixar XLSX",
+            data=xlsx_data,
+            file_name="links_afiliados.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            width="stretch",
+        )
+
+else:
+    # Nenhum produto coletado — orienta o usuário
+    st.warning(
+        "⚠️ **Nenhum link foi coletado.** Possíveis causas:\n\n"
+        "- Os marketplaces bloquearam o acesso (captcha / bot detection)\n"
+        "- Credenciais ou cookies inválidos ou expirados\n"
+        "- Seletores de página desatualizados (layout do site mudou)\n\n"
+        "💡 Tente o **Modo Demo** para confirmar que a interface e o download funcionam corretamente."
+    )
