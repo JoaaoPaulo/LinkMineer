@@ -241,6 +241,23 @@ def mine_shopee(page, config, q, ps, pe, stop_event=None):
             _log(q, f"Shopee: {i+1}/{len(valid)} pronto", ps + (pe-ps)*((i+1)/len(valid)))
     except Exception as e: _log(q, f"❌ Shopee: {str(e)[:50]}")
 
+def mine_generic_stub(page, config, q, ps, pe, marketplace, stop_event=None):
+    """Stub genérico para marketplaces ainda não configurados."""
+    _log(q, f"ℹ️ {marketplace}: Configuração pendente... Pulando.", pe)
+    time.sleep(0.5)
+
+def mine_pichau(page, config, q, ps, pe, stop_event=None):
+    mine_generic_stub(page, config, q, ps, pe, "Pichau", stop_event)
+
+def mine_kabum(page, config, q, ps, pe, stop_event=None):
+    mine_generic_stub(page, config, q, ps, pe, "Kabum", stop_event)
+
+def mine_magalu(page, config, q, ps, pe, stop_event=None):
+    mine_generic_stub(page, config, q, ps, pe, "Magalu", stop_event)
+
+def mine_girafa(page, config, q, ps, pe, stop_event=None):
+    mine_generic_stub(page, config, q, ps, pe, "Girafa", stop_event)
+
 # -----------------------------------------------------------------------
 # Motor Principal
 # -----------------------------------------------------------------------
@@ -270,9 +287,17 @@ def mine_shopee(page, config, q, ps, pe, stop_event=None):
                         permissions=["clipboard-read", "clipboard-write"]
                     )
                     page = context.new_page()
-                    active = [m for m in ["Amazon", "Mercado Livre", "Shopee"] if config["marketplaces"][m]["active"]]
+                    active = [m for m in ["Amazon", "Mercado Livre", "Shopee", "Pichau", "Kabum", "Magalu", "Girafa"] if config["marketplaces"].get(m, {}).get("active")]
                     seg = 1.0/len(active) if active else 1
-                    miners = {"Amazon": mine_amazon, "Mercado Livre": mine_ml, "Shopee": mine_shopee}
+                    miners = {
+                        "Amazon": mine_amazon, 
+                        "Mercado Livre": mine_ml, 
+                        "Shopee": mine_shopee,
+                        "Pichau": mine_pichau,
+                        "Kabum": mine_kabum,
+                        "Magalu": mine_magalu,
+                        "Girafa": mine_girafa
+                    }
                     for i, m in enumerate(active):
                         if stop_event and stop_event.is_set():
                             _log(q, f"Interrompendo antes de iniciar {m}...")
