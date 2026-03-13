@@ -37,208 +37,193 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# Estilos visuais customizados
-st.markdown("""
-<style>
-    /* Importando fonte moderna */
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+# -----------------------------------------------------------------------
+# Barra lateral – Configurações e Dark Mode
+# -----------------------------------------------------------------------
+with st.sidebar:
+    st.header("⚙️ Configurações")
     
-    html, body, [data-testid="stAppViewContainer"] {
-        font-family: 'Inter', sans-serif;
-        background: #0d1117;
-    }
+    # Toggle de Modo Escuro (único controle de tema)
+    is_dark_mode = st.toggle("🌙 Modo Escuro", value=False)
+    
+    # Modo Demo: não abre navegador, usa dados fictícios
+    demo_mode = st.toggle(
+        "🧪 Modo Demo",
+        value=False,
+        help="Usa produtos de exemplo sem abrir o Chrome."
+    )
 
-    /* Cabeçalho */
-    h1 { 
-        font-weight: 700 !important; 
-        background: linear-gradient(90deg, #fa8231, #e84393);
+# Estilos visuais fundamentados no Modo Branco (Padrão) ou Escuro
+bg_color = "#0e1117" if is_dark_mode else "#ffffff"
+text_color = "#f0f0f0" if is_dark_mode else "#1f2328"
+sidebar_bg = "#161b22" if is_dark_mode else "#f6f8fa"
+border_color = "#30363d" if is_dark_mode else "#d0d7de"
+card_bg = "#0d1117" if is_dark_mode else "#ffffff"
+btn_primary = "linear-gradient(90deg, #fa8231, #e84393)" if is_dark_mode else "#007bff"
+btn_text = "white"
+
+st.markdown(f"""
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&family=Inter:wght@400;600&display=swap');
+    
+    html, body, [data-testid="stAppViewContainer"] {{
+        background-color: {bg_color};
+        color: {text_color};
+        font-family: 'Inter', sans-serif;
+    }}
+
+    /* Ocultar Menu Streamlit (3 pontos e footer) */
+    #MainMenu {{visibility: hidden;}}
+    footer {{visibility: hidden;}}
+    header {{visibility: hidden;}}
+
+    /* Centralizar Cabeçalho */
+    .header-container {{
+        text-align: center;
+        padding: 2rem 1rem;
+    }}
+    .header-title {{
+        font-family: 'Montserrat', sans-serif;
+        font-weight: 700;
+        font-size: 3.5rem;
+        margin-bottom: 0.5rem;
+        background: {btn_primary};
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
-        margin-bottom: 0 !important;
-    }
-    
-    .main-subtitle {
-        color: #8b949e;
-        font-size: 1.1rem;
-        margin-bottom: 2rem;
-    }
+    }}
+    .header-subtitle {{
+        font-family: 'Inter', sans-serif;
+        color: #636e72;
+        font-size: 1.2rem;
+        font-weight: 400;
+    }}
 
-    /* Botão Principal - Primário */
-    div[data-testid="stButton"] > button[kind="primary"] {
-        background: linear-gradient(90deg, #fa8231, #e84393);
+    /* Botão Principal */
+    div[data-testid="stButton"] > button[kind="primary"] {{
+        background: {btn_primary};
         border: none;
-        color: white;
+        color: {btn_text};
         font-size: 1.1rem;
         font-weight: 600;
         border-radius: 12px;
         padding: 0.75rem 2rem;
         width: 100%;
         transition: all 0.3s ease;
-        box-shadow: 0 4px 15px rgba(232, 67, 147, 0.3);
-    }
-    div[data-testid="stButton"] > button[kind="primary"]:hover {
+        box-shadow: 0 4px 15px rgba(0, 123, 255, 0.2);
+    }}
+    div[data-testid="stButton"] > button[kind="primary"]:hover {{
         transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(232, 67, 147, 0.4);
+        box-shadow: 0 6px 20px rgba(0, 123, 255, 0.3);
         opacity: 0.9;
-    }
+    }}
 
-    /* Botão Parar - Secundário */
-    div[data-testid="stButton"] > button[kind="secondary"] {
-        background: #21262d;
-        border: 1px solid #f85149;
-        color: #f85149;
+    /* Botão Parar */
+    div[data-testid="stButton"] > button[kind="secondary"] {{
+        background: transparent;
+        border: 2px solid #ff4757;
+        color: #ff4757;
         font-weight: 600;
         border-radius: 12px;
         width: 100%;
-        transition: all 0.3s ease;
-    }
-    div[data-testid="stButton"] > button[kind="secondary"]:hover {
-        background: #f85149;
+        padding: 0.75rem;
+    }}
+    div[data-testid="stButton"] > button[kind="secondary"]:hover {{
+        background: #ff4757;
         color: white;
-    }
+    }}
 
     /* Sidebar */
-    [data-testid="stSidebar"] { background: #161b22; border-right: 1px solid #30363d; }
+    [data-testid="stSidebar"] {{
+        background-color: {sidebar_bg};
+        border-right: 1px solid {border_color};
+    }}
     
     /* Expanders */
-    .stExpander {
-        border: 1px solid #30363d !important;
+    .stExpander {{
+        border: 1px solid {border_color} !important;
         border-radius: 12px !important;
-        background: #0d1117 !important;
+        background-color: {card_bg} !important;
         margin-bottom: 10px !important;
-    }
-
-    /* Inputs */
-    .stTextInput input, .stTextArea textarea, .stNumberInput input {
-        background-color: #0d1117 !important;
-        border: 1px solid #30363d !important;
-        border-radius: 8px !important;
-    }
-
-    /* Status alerts */
-    .stAlert {
-        border-radius: 12px !important;
-        border: 1px solid #30363d !important;
-    }
+    }}
 </style>
 """, unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------
-# Cabeçalho da página
+# Cabeçalho da página (Centralizado)
 # -----------------------------------------------------------------------
-col_icon, col_title = st.columns([1, 10])
-with col_icon:
-    st.markdown("<h2 style='text-align: right; margin-top: 5px;'>⛏️</h2>", unsafe_allow_html=True)
-with col_title:
-    st.markdown("<h1>LinkMineer</h1>", unsafe_allow_html=True)
-    st.markdown("<p class='main-subtitle'>Mineração ultra-rápida de links de afiliados</p>", unsafe_allow_html=True)
+st.markdown("""
+<div class="header-container">
+    <div class="header-title">LinkMineer</div>
+    <div class="header-subtitle">Minerador inteligente de links de afiliados • Multi-Marketplace</div>
+</div>
+""", unsafe_allow_html=True)
 
 st.divider()
 
 # -----------------------------------------------------------------------
-# Barra lateral – Configurações
+# Continuação da Barra lateral – Marketplaces
 # -----------------------------------------------------------------------
 with st.sidebar:
-    st.header("⚙️ Configurações")
-
-    # Modo Demo: não abre navegador, usa dados fictícios
-    demo_mode = st.toggle(
-        "🧪 Modo Demo (sem navegador)",
-        value=False,
-        help=(
-            "Usa produtos de exemplo sem abrir o Chrome. "
-            "Ideal para testar a interface e o download antes de usar com conta real."
-        )
-    )
-
-    # Quantidade de produtos para minerar por marketplace
     qtd_produtos = st.number_input(
         "🔢 Produtos por marketplace",
-        min_value=1, max_value=5000, value=5, step=1,
-        help="Define quantos produtos serão coletados em cada marketplace ativo."
+        min_value=1, max_value=5000, value=5, step=1
     )
 
-    st.markdown("---")
-
-    # Initialize marketplace active states
-    ml_active = True
-    amz_active = True
-    shp_active = True
-    pic_active = False
-    kab_active = False
-    mag_active = False
-    gir_active = False
+    st.markdown("<br>", unsafe_allow_html=True)
 
     # ----------------------------------------------------------------
-    # Mercado Livre (Expandível)
+    # Mercado Livre
     # ----------------------------------------------------------------
-    with st.expander("🛒 Mercado Livre", expanded=ml_active):
+    with st.expander("🟡 Mercado Livre", expanded=False):
         ml_active = st.checkbox("Ativar Mercado Livre", value=True, key="ml_active_check")
-        st.info("⚠️ O ML exige **Cookies (JSON)** para acessar o Hub de Afiliados.")
-        ml_cookies = st.text_area("Cookies (JSON array)", height=100, key="ml_cookies", placeholder='[{"name": "...", "value": "..."}, ...]')
+        ml_cookies = st.text_area("Cookies (JSON array)", height=100, key="ml_cookies")
         ml_login_type = "Cookies (JSON)"
         ml_user, ml_pass, ml_tracking = "", "", ""
 
     # ----------------------------------------------------------------
-    # Amazon (Expandível)
+    # Amazon
     # ----------------------------------------------------------------
-    with st.expander("📦 Amazon", expanded=amz_active):
+    with st.expander("🟠 Amazon", expanded=False):
         amz_active = st.checkbox("Ativar Amazon", value=True, key="amz_active_check")
-        amz_tag = st.text_input(
-            "Tag de afiliado (AMZ)",
-            value=DEFAULT_AMAZON_TAG,
-            placeholder="ex: seunome-20",
-            key="amz_tag_input"
-        )
+        amz_tag = st.text_input("Tag de afiliado (AMZ)", value=DEFAULT_AMAZON_TAG, key="amz_tag_input")
         amz_login_type = st.selectbox("Autenticação AMZ", ["Cookies (JSON)", "Credenciais"], key="amz_lt")
         if "Credenciais" in amz_login_type:
-            amz_user = st.text_input("Usuário / E-mail Amazon", key="amz_user")
-            amz_pass = st.text_input("Senha Amazon", type="password", key="amz_pass")
+            amz_user = st.text_input("Usuário AMZ", key="amz_user")
+            amz_pass = st.text_input("Senha AMZ", type="password", key="amz_pass")
             amz_cookies = ""
         else:
-            amz_cookies = st.text_area("Cookies Amazon (JSON array)", height=80, key="amz_cookies")
+            amz_cookies = st.text_area("Cookies AMZ", height=80, key="amz_cookies")
             amz_user, amz_pass = "", ""
 
     # ----------------------------------------------------------------
-    # Shopee (Expandível)
+    # Shopee
     # ----------------------------------------------------------------
-    with st.expander("🛍️ Shopee", expanded=shp_active):
+    with st.expander("🔴 Shopee", expanded=False):
         shp_active = st.checkbox("Ativar Shopee", value=True, key="shp_active_check")
-        shp_aff_id = st.text_input(
-            "Affiliate ID (SHP)",
-            value=DEFAULT_SHOPEE_ID,
-            placeholder="ex: 123456789",
-            key="shp_aff_id_input"
-        )
+        shp_aff_id = st.text_input("Affiliate ID (SHP)", value=DEFAULT_SHOPEE_ID, key="shp_aff_id_input")
         shp_login_type = st.selectbox("Autenticação SHP", ["Cookies (JSON)", "Credenciais"], key="shp_lt")
         if "Credenciais" in shp_login_type:
-            shp_user = st.text_input("Usuário / E-mail Shopee", key="shp_user")
-            shp_pass = st.text_input("Senha Shopee", type="password", key="shp_pass")
+            shp_user = st.text_input("Usuário SHP", key="shp_user")
+            shp_pass = st.text_input("Senha SHP", type="password", key="shp_pass")
             shp_cookies = ""
         else:
-            shp_cookies = st.text_area("Cookies Shopee (JSON array)", height=80, key="shp_cookies")
+            shp_cookies = st.text_area("Cookies SHP", height=80, key="shp_cookies")
             shp_user, shp_pass = "", ""
 
     # ----------------------------------------------------------------
-    # Outros Marketplaces (Stubs)
+    # Outros
     # ----------------------------------------------------------------
-    st.markdown("### ➕ Outros (Em breve)")
-    
     with st.expander("🔵 Pichau", expanded=False):
         pic_active = st.checkbox("Ativar Pichau", value=False)
-        st.caption("Configurações em breve...")
         
     with st.expander("🟠 Kabum", expanded=False):
         kab_active = st.checkbox("Ativar Kabum", value=False)
-        st.caption("Configurações em breve...")
 
-    with st.expander("🔴 Magalu", expanded=False):
+    with st.expander("🔵 Magalu", expanded=False):
         mag_active = st.checkbox("Ativar Magalu", value=False)
-        st.caption("Configurações em breve...")
 
     with st.expander("🦒 Girafa", expanded=False):
         gir_active = st.checkbox("Ativar Girafa", value=False)
-        st.caption("Configurações em breve...")
 
 # -----------------------------------------------------------------------
 # Gerenciamento de Estado
@@ -247,6 +232,8 @@ if "results" not in st.session_state:
     st.session_state.results = []
 if "mining_active" not in st.session_state:
     st.session_state.mining_active = False
+if "mining_started" not in st.session_state:
+    st.session_state.mining_started = False
 if "stop_event" not in st.session_state:
     st.session_state.stop_event = threading.Event()
 
@@ -290,6 +277,7 @@ if start_btn:
     # Reset de estado para nova mineração
     st.session_state.results = []
     st.session_state.mining_active = True
+    st.session_state.mining_started = True
     st.session_state.stop_event.clear()
 
     # Monta o dicionário de configuração a partir dos campos da sidebar
@@ -441,11 +429,12 @@ if results:
         )
 
 else:
-    # Nenhum produto coletado — orienta o usuário
-    st.warning(
-        "⚠️ **Nenhum link foi coletado.** Possíveis causas:\n\n"
-        "- Os marketplaces bloquearam o acesso (captcha / bot detection)\n"
-        "- Credenciais ou cookies inválidos ou expirados\n"
-        "- Seletores de página desatualizados (layout do site mudou)\n\n"
-        "💡 Tente o **Modo Demo** para confirmar que a interface e o download funcionam corretamente."
-    )
+    # Só mostra o alerta de erro se a mineração já tiver começado alguma vez
+    if st.session_state.mining_started:
+        st.warning(
+            "⚠️ **Nenhum link foi coletado.** Possíveis causas:\n\n"
+            "- Os marketplaces bloquearam o acesso (captcha / bot detection)\n"
+            "- Credenciais ou cookies inválidos ou expirados\n"
+            "- Seletores de página desatualizados (layout do site mudou)\n\n"
+            "💡 Tente o **Modo Demo** para confirmar que a interface e o download funcionam corretamente."
+        )
