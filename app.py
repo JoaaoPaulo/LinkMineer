@@ -54,6 +54,7 @@ is_dark_mode = st.session_state['is_dark_mode']
 text_primary = black if not is_dark_mode else white
 bg_main = white if not is_dark_mode else "#0e1117"
 sidebar_bg = "#f0f2f6" if not is_dark_mode else "#161b22"
+text_blue = deep_blue if not is_dark_mode else "#74b9ff" # Azul claro para textos em modo escuro
 
 st.markdown(f"""
 <style>
@@ -67,7 +68,7 @@ st.markdown(f"""
     }}
 
     /* REFORÇO DE VISIBILIDADE (Sem usar * para preservar botões) */
-    p, span, label, div.markdown-text-container {{
+    p, span, label, div.markdown-text-container, h1, h2, h3, h4, h5, h6, li {{
         color: {text_primary} !important;
     }}
 
@@ -157,14 +158,14 @@ st.markdown(f"""
         line-height: 0.9 !important;
         letter-spacing: -2px !important;
     }}
-    .logo-link {{ color: {deep_blue} !important; }}
+    .logo-link {{ color: {text_blue} !important; }}
     .logo-mineer {{ color: #4facfe !important; /* Azul mais claro */ }}
 
     .header-subtitle {{
         font-family: 'Inter', sans-serif !important;
         font-weight: 600 !important;
         font-size: 1.8rem !important;
-        color: {vibrant_blue} !important;
+        color: {text_blue} !important;
         margin-top: 5px !important;
     }}
 
@@ -214,16 +215,20 @@ st.markdown(f"""
         border: 2px solid {deep_blue} !important;
         background-color: transparent !important;
     }}
-    [data-testid="stExpanderHeader"] {{
-        background-color: transparent !important; /* Removemos o "preto/azul" do fundo */
+    [data-testid="stExpanderHeader"],
+    [data-testid="stExpanderHeader"]:hover,
+    [data-testid="stExpanderHeader"]:active,
+    [data-testid="stExpanderHeader"]:focus,
+    [data-testid="stExpanderHeader"]:focus-within {{
+        background-color: transparent !important; /* Força transparência em TODOS os estados */
     }}
     [data-testid="stExpanderHeader"] p {{
         font-weight: 700 !important;
         font-size: 1.1rem !important;
-        color: {deep_blue} !important; /* Texto azul escuro em vez de branco */
+        color: {text_blue} !important; /* Adapta ao dark mode */
     }}
     [data-testid="stExpanderHeader"] svg {{
-        color: {deep_blue} !important; /* Icone +/- em azul escuro */
+        color: {text_blue} !important; 
     }}
     [data-testid="stExpanderDetails"] {{
         background-color: transparent !important;
@@ -273,7 +278,7 @@ st.divider()
 # -----------------------------------------------------------------------
 with st.sidebar:
     # --- Configurações Movidas para cá e acima da qtd ---
-    st.markdown("<h3 style='color: #1e3799; text-align: center;'>Configurações</h3>", unsafe_allow_html=True)
+    st.markdown(f"<h3 style='color: {text_blue}; text-align: center;'>Configurações</h3>", unsafe_allow_html=True)
     st.toggle("🌙 Modo Escuro", key="is_dark_mode")
     st.toggle("🧪 Modo Demo", key="is_demo_mode")
     demo_mode = st.session_state['is_demo_mode']
@@ -286,7 +291,7 @@ with st.sidebar:
 
     # Espaço bem maior entre config e marketplaces
     st.markdown("<br><br><br>", unsafe_allow_html=True)
-    st.markdown("<h3 style='color: #1e3799; text-align: center;'>Marketplaces</h3>", unsafe_allow_html=True)
+    st.markdown(f"<h3 style='color: {text_blue}; text-align: center;'>Marketplaces</h3>", unsafe_allow_html=True)
 
     # ----------------------------------------------------------------
     # Mercado Livre
