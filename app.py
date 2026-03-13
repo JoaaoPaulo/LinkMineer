@@ -73,8 +73,8 @@ st.markdown(f"""
         font-family: 'Inter', sans-serif !important;
     }}
 
-    /* REFORÇO DE VISIBILIDADE EM TUDO */
-    .stApp *, [data-testid="stSidebar"] *, .stMarkdown, .stText, label, p, span {{
+    /* REFORÇO DE VISIBILIDADE (Sem usar * para preservar botões) */
+    p, span, label, div.markdown-text-container {{
         color: {text_primary} !important;
     }}
 
@@ -124,46 +124,40 @@ st.markdown(f"""
         margin-top: 5px !important;
     }}
 
-    /* Botão Principal e Download Estilizados (L-Border) */
+    /* BOTOES MODERNOS SUAVES */
     div[data-testid="stButton"] > button[kind="primary"], 
     div[data-testid="stDownloadButton"] > button {{
         background-color: {deep_blue} !important;
         color: {white} !important;
-        border: 2px solid {white} !important;
-        border-left: 15px solid {white} !important;
-        font-size: 1.4rem !important;
-        font-weight: 800 !important;
-        border-radius: 4px !important;
-        padding: 1rem 2rem !important;
+        border: none !important;
+        font-size: 1.2rem !important;
+        font-weight: 700 !important;
+        border-radius: 6px !important;
+        padding: 0.8rem 2rem !important;
         width: 100% !important;
-        transition: all 0.3s ease !important;
-        text-transform: uppercase !important;
-        box-shadow: 0 4px 15px rgba(30, 55, 153, 0.4);
+        transition: all 0.2s ease !important;
     }}
     div[data-testid="stButton"] > button[kind="primary"]:hover,
     div[data-testid="stDownloadButton"] > button:hover {{
-        background-color: {white} !important;
-        color: {deep_blue} !important;
-        border: 2px solid {deep_blue} !important;
-        border-left: 15px solid {deep_blue} !important;
-        transform: scale(1.02) !important;
+        background-color: {vibrant_blue} !important;
+        color: {white} !important;
+        opacity: 0.9 !important;
+        transform: translateY(-2px) !important;
     }}
 
-    /* Botão de Parar (Vermelho/Branco) */
+    /* Botão de Parar (Vermelho Leve) */
     div[data-testid="stButton"] > button[kind="secondary"] {{
-        background-color: #d63031 !important;
-        color: {white} !important;
-        border: 2px solid {white} !important;
-        border-left: 15px solid {white} !important;
-        font-weight: 800 !important;
-        border-radius: 4px !important;
+        background-color: transparent !important;
+        color: #d63031 !important;
+        border: 2px solid #d63031 !important;
+        font-weight: 700 !important;
+        border-radius: 6px !important;
         width: 100% !important;
-        text-transform: uppercase !important;
+        transition: all 0.2s ease !important;
     }}
     div[data-testid="stButton"] > button[kind="secondary"]:hover {{
-        background-color: {white} !important;
-        color: #d63031 !important;
-        border-left: 15px solid #d63031 !important;
+        background-color: #d63031 !important;
+        color: {white} !important;
     }}
 
     /* Títulos de Expander */
@@ -173,45 +167,9 @@ st.markdown(f"""
         color: {white} !important;
     }}
 
-    /* ANIMAÇÃO BARRA DE PROGRESSO COM PESSOA CORRENDO */
-    .progress-track {{
-        width: 100%;
-        height: 14px;
-        background: {white};
-        border: 2px solid {deep_blue};
-        border-radius: 20px;
-        position: relative;
-        overflow: visible;
-        margin: 50px 0 30px 0;
-    }}
-    .progress-fill {{
-        height: 100%;
-        background: {deep_blue};
-        border-radius: 20px;
-        transition: width 0.3s ease;
-    }}
-    .runner-container {{
-        position: absolute;
-        bottom: 14px;
-        left: 0;
-        transition: left 0.3s ease;
-        z-index: 99;
-    }}
-    .runner-silhouette {{
-        font-size: 60px; /* Bem alto */
-        line-height: 1;
-        display: inline-block;
-        filter: grayscale(1) brightness(0) opacity(0.8);
-        transform-origin: bottom center;
-        animation: runner-move 0.5s infinite alternate;
-    }}
-    @keyframes runner-move {{
-        from {{ transform: skewX(-5deg) translateY(0); }}
-        to {{ transform: skewX(5deg) translateY(-5px); }}
-    }}
+    /* Barra de progresso padrao */
 
-    /* Ocultar elementos sem quebrar o Sidebar Toggle */
-    [data-testid="stToolbar"] {{visibility: hidden;}}
+    /* Não ocultar a toolbar porque quebra o toggle da sidebar */
     footer {{visibility: hidden;}}
     
     /* Espaçamento Reduzido (Próximo) */
@@ -397,23 +355,9 @@ if start_btn:
             "Os produtos abaixo são fictícios, usados apenas para testar a interface."
         )
 
-    # Barra de progresso e status (CUSTOMIZADA)
+    # Barra de progresso e status
     st.markdown("### ⏳ Progresso da Mineração")
-    progress_placeholder = st.empty()
-    
-    def update_custom_progress(pct):
-        render_pct = int(pct * 100)
-        progress_placeholder.markdown(f"""
-            <div class="progress-track">
-                <div class="runner-container" style="left: calc({render_pct}% - 20px);">
-                    <span class="runner-silhouette">🏃‍♂️</span>
-                </div>
-                <div class="progress-fill" style="width: {render_pct}%;"></div>
-            </div>
-            <p style="text-align: right; font-weight: 700; color: {deep_blue}; margin-top: -10px;">{render_pct}%</p>
-        """, unsafe_allow_html=True)
-
-    update_custom_progress(0.0)
+    progress_bar = st.progress(0.0)
     status_text = st.empty()
 
     # Painel de logs detalhados
@@ -435,7 +379,7 @@ if start_btn:
             # 1. Trata Progresso
             if "progress" in update:
                 val = min(float(update["progress"]), 1.0)
-                update_custom_progress(val)
+                progress_bar.progress(val)
                 if msg:
                     status_text.markdown(f"**{msg}**")
             
@@ -454,9 +398,9 @@ if start_btn:
 
         if st.session_state.stop_event.is_set():
             status_text.markdown("🛑 **Mineração parada pelo usuário!**")
-            update_custom_progress(1.0)
+            progress_bar.progress(1.0)
         else:
-            update_custom_progress(1.0)
+            progress_bar.progress(1.0)
             status_text.markdown("✅ **Mineração concluída!**")
 
     except Exception as e:
