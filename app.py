@@ -301,14 +301,17 @@ with st.sidebar:
     with st.expander("AMAZON", expanded=False):
         amz_active = st.checkbox("Ativar Amazon", value=True, key="amz_active_check")
         amz_tag = st.text_input("Tag de afiliado (AMZ)", value=DEFAULT_AMAZON_TAG, key="amz_tag_input")
-        amz_login_type = st.selectbox("Autenticação AMZ", ["Cookies (JSON)", "Credenciais"], key="amz_lt")
+        amz_login_type = st.selectbox("Autenticação AMZ", ["Cookies (JSON)", "Credenciais", "API"], key="amz_lt")
+        amz_user, amz_pass, amz_cookies, amz_access_key, amz_secret_key, amz_keyword = "", "", "", "", "", ""
         if "Credenciais" in amz_login_type:
             amz_user = st.text_input("Usuário AMZ", key="amz_user")
             amz_pass = st.text_input("Senha AMZ", type="password", key="amz_pass")
-            amz_cookies = ""
+        elif "API" in amz_login_type:
+            amz_access_key = st.text_input("Access Key (AMZ)", key="amz_access_key")
+            amz_secret_key = st.text_input("Secret Key (AMZ)", type="password", key="amz_secret_key")
+            amz_keyword = st.text_input("Palavra-chave de busca", placeholder='ex: "fone bluetooth", "notebook"', key="amz_keyword")
         else:
             amz_cookies = st.text_area("Cookies AMZ", height=80, key="amz_cookies")
-            amz_user, amz_pass = "", ""
 
     # ----------------------------------------------------------------
     # Shopee
@@ -404,10 +407,13 @@ if start_btn:
             "Amazon": {
                 "active": amz_active,
                 "tag": amz_tag,
-                "login_type": "Cookies" if "Cookies" in amz_login_type else "Credentials",
+                "login_type": "API" if "API" in amz_login_type else ("Cookies" if "Cookies" in amz_login_type else "Credentials"),
                 "user": amz_user,
                 "password": amz_pass,
                 "cookies": amz_cookies,
+                "access_key": amz_access_key,
+                "secret_key": amz_secret_key,
+                "keyword": amz_keyword,
             },
             "Mercado Livre": {
                 "active": ml_active,
