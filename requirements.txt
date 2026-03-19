@@ -14,3 +14,4 @@ openpyxl>=3.1.0
 
 # Utilitários
 python-dotenv>=1.0.0
+gunicorn>=21.0.0
