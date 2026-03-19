@@ -71,8 +71,131 @@ def _load_cookies(page, q: queue.Queue, cookies_json: str, marketplace: str):
 # Scrapers
 # -----------------------------------------------------------------------
 
+def mine_amazon_api(config, q, ps, pe, stop_event=None):
+    import hashlib
+    import hmac
+    import datetime
+    import urllib.request
+    import urllib.error
+    
+    cfg = config["marketplaces"]["Amazon"]
+    qtd = config.get("qtd_produtos", 5)
+    tag = cfg.get("tag", "").strip() or "tag-20"
+    access_key = cfg.get("access_key", "").strip()
+    secret_key = cfg.get("secret_key", "").strip()
+    keyword = cfg.get("keyword", "").strip() or "ofertas"
+    
+    if not access_key or not secret_key:
+        _log(q, "❌ Amazon API: Access Key ou Secret Key ausente.")
+        return
+
+    host = 'webservices.amazon.com.br'
+    region = 'sa-east-1'
+    service = 'ProductAdvertisingAPI'
+    path = '/paapi5/searchitems'
+
+    items_fetched = 0
+    page_index = 1
+
+    while items_fetched < qtd and page_index <= 10:
+        if stop_event and stop_event.is_set():
+            _log(q, "Amazon API: Interrupção solicitada pelo usuário.")
+            break
+
+        payload_dict = {
+            "Keywords": keyword,
+            "PartnerTag": tag,
+            "PartnerType": "Associates",
+            "ItemCount": min(qtd - items_fetched, 10),
+            "ItemPage": page_index,
+            "Resources": ["ItemInfo.Title"]
+        }
+        payload = json.dumps(payload_dict)
+
+        t = datetime.datetime.utcnow()
+        amz_date = t.strftime('%Y%m%dT%H%M%SZ')
+        datestamp = t.strftime('%Y%m%d')
+
+        canonical_uri = path
+        canonical_querystring = ''
+        canonical_headers = (
+            f"content-encoding:amz-1.0\n"
+            f"content-type:application/json; charset=utf-8\n"
+            f"host:{host}\n"
+            f"x-amz-date:{amz_date}\n"
+            f"x-amz-target:com.amazon.paapi5.v1.ProductAdvertisingAPIv1.SearchItems\n"
+        )
+        signed_headers = 'content-encoding;content-type;host;x-amz-date;x-amz-target'
+        payload_hash = hashlib.sha256(payload.encode('utf-8')).hexdigest()
+
+        canonical_request = f"POST\n{canonical_uri}\n{canonical_querystring}\n{canonical_headers}\n{signed_headers}\n{payload_hash}"
+        algorithm = 'AWS4-HMAC-SHA256'
+        credential_scope = f"{datestamp}/{region}/{service}/aws4_request"
+        string_to_sign = f"{algorithm}\n{amz_date}\n{credential_scope}\n{hashlib.sha256(canonical_request.encode('utf-8')).hexdigest()}"
+
+        def sign(key, msg):
+            return hmac.new(key, msg.encode("utf-8"), hashlib.sha256).digest()
+
+        kDate = sign(('AWS4' + secret_key).encode('utf-8'), datestamp)
+        kRegion = sign(kDate, region)
+        kService = sign(kRegion, service)
+        kSigning = sign(kService, 'aws4_request')
+        signature = hmac.new(kSigning, string_to_sign.encode('utf-8'), hashlib.sha256).hexdigest()
+
+        authorization_header = f"{algorithm} Credential={access_key}/{credential_scope}, SignedHeaders={signed_headers}, Signature={signature}"
+
+        headers = {
+            'content-encoding': 'amz-1.0',
+            'content-type': 'application/json; charset=utf-8',
+            'host': host,
+            'x-amz-date': amz_date,
+            'x-amz-target': 'com.amazon.paapi5.v1.ProductAdvertisingAPIv1.SearchItems',
+            'Authorization': authorization_header
+        }
+
+        url = f"https://{host}{path}"
+        req = urllib.request.Request(url, data=payload.encode('utf-8'), headers=headers, method='POST')
+        
+        try:
+            with urllib.request.urlopen(req) as response:
+                res_body = response.read().decode('utf-8')
+                data = json.loads(res_body)
+                
+                items = data.get("SearchResult", {}).get("Items", [])
+                if not items:
+                    _log(q, "Amazon API: Nenhum produto extra encontrado (fim da busca).")
+                    break
+                
+                for i, item in enumerate(items):
+                    if items_fetched >= qtd:
+                        break
+                    if stop_event and stop_event.is_set():
+                        break
+                        
+                    asin = item.get("ASIN")
+                    aff_url = item.get("DetailPageURL")
+                    if asin and aff_url:
+                        prod_url = f"https://www.amazon.com.br/dp/{asin}"
+                        q.put({"result": {"marketplace": "Amazon", "link_produto": prod_url, "link_afiliado": aff_url}})
+                        items_fetched += 1
+                        _log(q, f"Amazon API: {items_fetched}/{qtd} coletado", ps + (pe-ps)*(items_fetched/qtd))
+
+                page_index += 1
+                time.sleep(1) # Proteção rate limit básico
+        except urllib.error.HTTPError as e:
+            err_body = e.read().decode('utf-8')
+            _log(q, f"❌ Amazon API Erro HTTP {e.code}: {err_body[:150]}")
+            break
+        except Exception as e:
+            _log(q, f"❌ Amazon API Erro: {str(e)[:150]}")
+            break
+
 def mine_amazon(page, config, q, ps, pe, stop_event=None):
     cfg = config["marketplaces"]["Amazon"]
+    if cfg.get("login_type") == "API":
+        mine_amazon_api(config, q, ps, pe, stop_event=stop_event)
+        return
+
     qtd = config.get("qtd_produtos", 5)
     tag = cfg.get("tag", "").strip() or "tag-20"
     if cfg.get("cookies"): _load_cookies(page, q, cfg["cookies"], "Amazon")
