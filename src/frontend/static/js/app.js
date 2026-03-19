@@ -16,8 +16,10 @@ document.addEventListener('DOMContentLoaded', () => {
             marketplaces: {
                 "Amazon": {
                     active: document.getElementById('amz_active').checked,
+                    access_key: document.getElementById('amz_access_key').value,
+                    secret_key: document.getElementById('amz_secret_key').value,
                     tag: document.getElementById('amz_tag').value,
-                    cookies: document.getElementById('amz_cookies').value
+                    keyword: document.getElementById('amz_keyword').value
                 },
                 "Mercado Livre": {
                     active: document.getElementById('ml_active').checked,
