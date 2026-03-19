@@ -66,7 +66,7 @@ A planilha gerada contém as colunas:
 
 Disponível para download em **CSV** e **XLSX**.
 
----
+---kk
 
 ## ⚠️ Observações importantes
 
