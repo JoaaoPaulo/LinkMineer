@@ -1,0 +1,21 @@
+/* CSS Variables - Global Token System */
+:root {
+    --deep-blue: #1e3799;
+    --vibrant-blue: #0056b3;
+    --light-blue: #74b9ff;
+    --white: #ffffff;
+    --black: #000000;
+    --dark-bg: #0e1117;
+    --sidebar-bg: #161b22;
+    --accent: #4facfe;
+    
+    --font-primary: 'Inter', sans-serif;
+    --font-heading: 'Montserrat', sans-serif;
+    
+    --shadow-sm: 0 2px 4px rgba(0,0,0,0.1);
+    --shadow-md: 0 4px 6px rgba(0,0,0,0.1);
+    --shadow-lg: 0 10px 15px rgba(0,0,0,0.1);
+    
+    --transition-fast: 0.2s ease;
+    --transition-mid: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}

@@ -1,0 +1,132 @@
+/* UI Components - Buttons, Inputs, Cards */
+
+/* Logo */
+.logo {
+    font-family: var(--font-heading);
+    font-weight: 800;
+    font-size: 2.5rem;
+    margin-bottom: 2rem;
+    text-align: center;
+}
+.logo-link { color: var(--light-blue); }
+.logo-mineer { 
+    color: var(--accent);
+    background: linear-gradient(135deg, var(--light-blue), var(--accent));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+/* Forms */
+.form-group {
+    margin-bottom: 1.5rem;
+}
+.form-label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: var(--light-blue);
+}
+.form-input {
+    width: 100%;
+    background-color: #262730;
+    color: var(--white);
+    border: 1px solid #464855;
+    border-radius: 8px;
+    padding: 0.75rem;
+    outline: none;
+    transition: var(--transition-fast);
+}
+.form-input:focus {
+    border-color: var(--vibrant-blue);
+    box-shadow: 0 0 0 2px rgba(0, 86, 179, 0.25);
+}
+
+/* Expanders */
+.expander {
+    background-color: rgba(30, 55, 153, 0.1);
+    border: 1px solid var(--deep-blue);
+    border-radius: 8px;
+    margin-bottom: 0.75rem;
+    overflow: hidden;
+}
+.expander-header {
+    background-color: var(--deep-blue);
+    padding: 0.75rem 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    font-weight: 700;
+}
+.expander-content {
+    padding: 1rem;
+    display: none;
+}
+.expander.open .expander-content {
+    display: block;
+}
+
+/* Buttons */
+.btn {
+    display: inline-block;
+    width: 100%;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    font-weight: 700;
+    text-align: center;
+    transition: var(--transition-mid);
+}
+.btn-primary {
+    background: linear-gradient(135deg, var(--deep-blue), var(--vibrant-blue));
+    color: var(--white);
+}
+.btn-primary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+.btn-secondary {
+    background-color: transparent;
+    border: 2px solid #e63946;
+    color: #e63946;
+}
+.btn-secondary:hover {
+    background-color: #e63946;
+    color: var(--white);
+}
+
+/* Log Box */
+.log-box {
+    background-color: #1e1e1e;
+    color: #00ff00;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 0.85rem;
+    padding: 1rem;
+    border-radius: 8px;
+    height: 300px;
+    overflow-y: auto;
+    border: 1px solid #333;
+}
+
+/* Data Table */
+.results-table-container {
+    background-color: var(--sidebar-bg);
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.1);
+}
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+th {
+    background-color: var(--deep-blue);
+    padding: 1rem;
+    text-align: left;
+}
+td {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+tr:hover {
+    background-color: rgba(255,255,255,0.02);
+}

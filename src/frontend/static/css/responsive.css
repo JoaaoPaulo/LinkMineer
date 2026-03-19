@@ -1,0 +1,39 @@
+@media (max-width: 1024px) {
+    .sidebar {
+        width: 260px;
+    }
+    .main-content {
+        padding: 2rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .app-container {
+        flex-direction: column;
+    }
+    .sidebar {
+        width: 100%;
+        height: auto;
+        position: relative;
+        border-right: none;
+        border-bottom: 1px solid rgba(116, 185, 255, 0.2);
+    }
+    .dashboard-grid {
+        grid-template-columns: 1fr;
+    }
+    .main-content {
+        padding: 1.5rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .logo {
+        font-size: 2rem;
+    }
+    .main-content {
+        padding: 1rem;
+    }
+    .btn {
+        padding: 0.6rem 1rem;
+    }
+}
