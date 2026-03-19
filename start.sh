@@ -14,12 +14,7 @@ playwright install-deps chromium || true
 echo ">>> [2/3] Instalando o Chromium..."
 playwright install chromium
 
-echo ">>> [3/3] Iniciando Streamlit na porta $PORT..."
-# $PORT é injetado automaticamente pelo Railway
-# --server.address 0.0.0.0 garante que o Railway consiga rotear o tráfego
-streamlit run app.py \
-  --server.port "$PORT" \
-  --server.address 0.0.0.0 \
-  --server.headless true \
-  --server.enableCORS false \
-  --server.enableXsrfProtection false
+echo ">>> [3/3] Iniciando LinkMineer na porta $PORT..."
+# $PORT é injetada automaticamente pelo Railway
+# Executa o novo ponto de entrada modular
+python run.py
