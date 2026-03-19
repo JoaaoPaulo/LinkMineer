@@ -2,20 +2,20 @@
 :root {
     --deep-blue: #1e3799;
     --vibrant-blue: #0056b3;
-    --light-blue: #74b9ff;
+    --light-blue: #2c3e50; /* Darker blue for text in light mode */
     --white: #ffffff;
-    --black: #000000;
-    --dark-bg: #0e1117;
-    --sidebar-bg: #161b22;
+    --black: #1a1a1a;
+    --dark-bg: #f8fbff; /* Very light blue/grey background */
+    --sidebar-bg: #ffffff;
     --accent: #4facfe;
     
     --font-primary: 'Inter', sans-serif;
     --font-heading: 'Montserrat', sans-serif;
     
-    --shadow-sm: 0 2px 4px rgba(0,0,0,0.1);
-    --shadow-md: 0 4px 6px rgba(0,0,0,0.1);
-    --shadow-lg: 0 10px 15px rgba(0,0,0,0.1);
+    --shadow-sm: 0 2px 8px rgba(0,0,0,0.05);
+    --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+    --shadow-lg: 0 10px 25px rgba(0,0,0,0.12);
     
     --transition-fast: 0.2s ease;
-    --transition-mid: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-mid: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }

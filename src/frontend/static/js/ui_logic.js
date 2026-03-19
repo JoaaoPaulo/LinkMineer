@@ -10,12 +10,6 @@ const UILogic = {
         document.querySelectorAll('.expander-header').forEach(header => {
             header.addEventListener('click', () => {
                 header.parentElement.classList.toggle('open');
-                const icon = header.querySelector('.icon');
-                if (header.parentElement.classList.contains('open')) {
-                    icon.textContent = '▲';
-                } else {
-                    icon.textContent = '▼';
-                }
             });
         });
     },
@@ -35,7 +29,7 @@ const UILogic = {
     /**
      * Updates the progress bar and status text.
      */
-    updateProgress(percent, statusText, color = null) {
+    updateProgress(percent, statusText, color = "#0056b3") {
         const bar = document.getElementById('progress_bar');
         const text = document.getElementById('status_text');
         
