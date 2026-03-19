@@ -3,12 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LinkMineer – Minerador Inteligente</title>
+    <title>LinkMineer – Dashbord de Afiliados</title>
     
     <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;800&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     
-    <!-- Granular CSS Files (User Requested Maximum Files) -->
+    <!-- Icons: FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <!-- Granular CSS Files -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/variables.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/reset.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/layout.css') }}">
@@ -18,48 +21,48 @@
 </head>
 <body>
     <div class="app-container">
-        <!-- Sidebar: Configuration & Marketplaces -->
+        <!-- Sidebar: Configuration Panel -->
         <aside class="sidebar">
-            <h3 style="color: var(--deep-blue); margin-bottom: 1.5rem; text-align: center; font-family: var(--font-heading);">⚙️ Configurações</h3>
+            <h3><i class="fas fa-sliders-h"></i> CONFIGURAÇÕES</h3>
             
             <div class="form-group">
-                <label class="form-label" for="qtd_produtos">📦 Qtd. de Produtos</label>
+                <label class="form-label" for="qtd_produtos">Quantos produtos minerar?</label>
                 <input class="form-input" type="number" id="qtd_produtos" value="5" min="1" max="5000">
             </div>
             
-            <hr style="border: 0.5px solid rgba(116, 185, 255, 0.1); margin: 2rem 0;">
+            <hr style="border: 0; border-top: 1px solid var(--border-light); margin: 2rem 0;">
             
-            <h3 style="color: var(--light-blue); margin-bottom: 1rem; text-align: center;">🏪 Marketplaces</h3>
+            <h3><i class="fas fa-store"></i> MARKETPLACES</h3>
             
-            <!-- Marketplace Expanders -->
+            <!-- Marketplace Cards -->
             <div class="expander" id="ml_expander">
                 <div class="expander-header">
-                    <span>🔵 MERCADO LIVRE</span>
-                    <span class="icon">▼</span>
+                    <span><i class="fab fa-shopify" style="color: #ffe600; filter: drop-shadow(0 0 2px rgba(0,0,0,0.1));"></i> MERCADO LIVRE</span>
+                    <i class="fas fa-chevron-down icon-rotate"></i>
                 </div>
                 <div class="expander-content">
                     <div class="form-group">
-                        <label><input type="checkbox" id="ml_active" checked> Ativar</label>
+                        <label><input type="checkbox" id="ml_active" checked> Habilitar este marketplace</label>
                     </div>
                     <div class="form-group">
                         <label class="form-label">Cookies (JSON)</label>
-                        <textarea class="form-input" id="ml_cookies" placeholder='[{"name": "...", "value": "..."}, ...]'></textarea>
+                        <textarea class="form-input" id="ml_cookies" placeholder='Ex: [{"name": "...", "value": "..."}, ...]'></textarea>
                     </div>
                 </div>
             </div>
 
             <div class="expander" id="amz_expander">
                 <div class="expander-header">
-                    <span>🟠 AMAZON</span>
-                    <span class="icon">▼</span>
+                    <span><i class="fab fa-amazon" style="color: #ff9900;"></i> AMAZON</span>
+                    <i class="fas fa-chevron-down icon-rotate"></i>
                 </div>
                 <div class="expander-content">
                     <div class="form-group">
-                        <label><input type="checkbox" id="amz_active" checked> Ativar</label>
+                        <label><input type="checkbox" id="amz_active" checked> Habilitar este marketplace</label>
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Tag Afiliado</label>
-                        <input class="form-input" type="text" id="amz_tag" placeholder="ex: tag-20">
+                        <label class="form-label">Sua Tag / Associate ID</label>
+                        <input class="form-input" type="text" id="amz_tag" placeholder="ex: seuID-20">
                     </div>
                     <div class="form-group">
                         <label class="form-label">Cookies (JSON)</label>
@@ -70,97 +73,112 @@
 
             <div class="expander" id="shp_expander">
                 <div class="expander-header">
-                    <span>🔴 SHOPEE</span>
-                    <span class="icon">▼</span>
+                    <span><i class="fas fa-shopping-bag" style="color: #ee4d2d;"></i> SHOPEE</span>
+                    <i class="fas fa-chevron-down icon-rotate"></i>
                 </div>
                 <div class="expander-content">
                     <div class="form-group">
-                        <label><input type="checkbox" id="shp_active" checked> Ativar</label>
+                        <label><input type="checkbox" id="shp_active" checked> Habilitar este marketplace</label>
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Affiliate ID</label>
+                        <label class="form-label">Seu Affiliate ID</label>
                         <input class="form-input" type="text" id="shp_aff_id">
                     </div>
                     <div class="form-group">
                         <label class="form-label">Cookies (JSON)</label>
-                        <textarea class="form-input" id="shp_cookies"></textarea>
+                        <textarea class="form-input" id="shp_cookies" placeholder="Obrigatório para links oficiais"></textarea>
                     </div>
                 </div>
             </div>
 
             <div class="expander">
                 <div class="expander-header">
-                    <span>➕ OUTROS</span>
-                    <span class="icon">▼</span>
+                    <span><i class="fas fa-plus-circle"></i> PRÓXIMOS</span>
+                    <i class="fas fa-chevron-down icon-rotate"></i>
                 </div>
                 <div class="expander-content">
-                    <p style="font-size: 0.8rem; color: #888;">Em desenvolvimento</p>
-                    <label><input type="checkbox" id="pic_active"> Pichau</label><br>
-                    <label><input type="checkbox" id="kab_active"> Kabum</label><br>
+                    <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.5rem;">Em fase de implementação:</p>
+                    <label style="display: block; margin-bottom: 0.25rem;"><input type="checkbox" id="pic_active"> Pichau</label>
+                    <label style="display: block; margin-bottom: 0.25rem;"><input type="checkbox" id="kab_active"> Kabum</label>
                 </div>
             </div>
             
-            <div style="margin-top: 2rem;">
-                <label><input type="checkbox" id="demo_mode"> 🧪 Modo Demo</label>
+            <div style="margin-top: 2rem; padding: 1rem; background: #f1f5f9; border-radius: 12px;">
+                <label style="font-weight: 600; display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                    <input type="checkbox" id="demo_mode"> 🧪 Modo de Teste
+                </label>
             </div>
         </aside>
 
-        <!-- Main Dashboard -->
+        <!-- Main Dashboard Content -->
         <main class="main-content">
             <header class="header-section fade-in">
                 <div class="logo logo-large">
                     <span class="logo-link">Link</span><span class="logo-mineer">Mineer</span>
                 </div>
-                <p style="color: var(--vibrant-blue); font-weight: 600; font-size: 1.2rem; margin-top: 0.5rem;">Minerador Inteligente de Links de Afiliados • Multi-Marketplace</p>
-                <div style="margin-top: 2rem; max-width: 300px; margin-left: auto; margin-right: auto;">
-                    <button class="btn btn-primary" id="start_btn">🚀 INICIAR MINERAÇÃO</button>
-                    <button class="btn btn-secondary" id="stop_btn" style="display: none;">🛑 INTERROMPER AGORA</button>
+                <p class="header-subtitle">Software inteligente para mineração e conversão massiva de links de afiliados</p>
+                
+                <div style="margin-top: 3rem; display: flex; justify-content: center; gap: 1rem;">
+                    <button class="btn btn-primary pulse-primary" id="start_btn">
+                        <i class="fas fa-play"></i> INICIAR MINERAÇÃO
+                    </button>
+                    <button class="btn btn-danger" id="stop_btn" style="display: none;">
+                        <i class="fas fa-stop"></i> PARAR AGORA
+                    </button>
                 </div>
             </header>
 
             <div class="dashboard-grid">
-                <!-- Progress & Logs -->
-                <div class="control-panel">
-                    <h3>⏳ Progresso</h3>
-                    <div style="background: #333; height: 10px; border-radius: 5px; overflow: hidden;">
-                        <div id="progress_bar" style="background: var(--vibrant-blue); height: 100%; width: 0%; transition: width 0.3s;"></div>
-                    </div>
-                    <p id="status_text" style="text-align: center; font-weight: 700;">Aguardando...</p>
+                <!-- Status & Console Panel -->
+                <div class="left-panel">
+                    <h3 style="margin-bottom: 1.5rem;"><i class="fas fa-chart-line"></i> MONITOR DE EXECUÇÃO</h3>
                     
-                    <h3>🔍 Detalhes da Execução</h3>
-                    <div class="log-box" id="log_container"></div>
-                </div>
-
-                <!-- Results -->
-                <div class="results-panel">
-                    <div class="export-actions" style="display: none; justify-content: space-between; align-items: center;" id="export_panel">
-                        <h3>📊 Resultados</h3>
-                        <div style="display: flex; gap: 1rem;">
-                            <a href="/download/csv" class="btn btn-primary" style="width: auto;">📂 CSV</a>
-                            <a href="/download/xlsx" class="btn btn-primary" style="width: auto;">📊 XLSX</a>
+                    <div class="results-card" style="padding: 1.5rem; margin-bottom: 2rem;">
+                        <p id="status_text" style="font-weight: 700; font-size: 1.125rem; margin-bottom: 0.5rem; color: var(--primary);">Pronto para iniciar</p>
+                        <div class="progress-container">
+                            <div id="progress_bar" class="progress-fill" style="width: 0%;"></div>
                         </div>
                     </div>
                     
-                    <div class="results-table-container">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Marketplace</th>
-                                    <th>Link Produto</th>
-                                    <th>Link Afiliado</th>
-                                </tr>
-                            </thead>
-                            <tbody id="results_body">
-                                <!-- Results will be injected here -->
-                            </tbody>
-                        </table>
+                    <h3><i class="fas fa-terminal"></i> CONSOLE DE LOGS</h3>
+                    <div class="terminal" id="log_container">
+                        <div class="terminal-line info">Aguardando comando do sistema...</div>
+                    </div>
+                </div>
+
+                <!-- Results & Export Area -->
+                <div class="right-panel">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 1.5rem;">
+                        <h3><i class="fas fa-list-ul"></i> LINKS COLETADOS</h3>
+                        <div class="export-panel" id="export_panel" style="display: none;">
+                            <span style="font-size: 0.8rem; font-weight: 600; color: var(--text-muted);">EXPORTAR:</span>
+                            <a href="/download/csv" class="btn btn-secondary export-btn"><i class="fas fa-file-csv"></i> CSV</a>
+                            <a href="/download/xlsx" class="btn btn-secondary export-btn"><i class="fas fa-file-excel"></i> XLSX</a>
+                        </div>
+                    </div>
+                    
+                    <div class="results-card">
+                        <div class="results-table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>ORIGEM</th>
+                                        <th>PRODUTO ORIGINAL</th>
+                                        <th style="text-align: right;">LINK AFILIADO</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="results_body">
+                                    <!-- Results dynamically injected -->
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>
         </main>
     </div>
 
-    <!-- Granular JS Files -->
+    <!-- Application Scripts -->
     <script src="{{ url_for('static', filename='js/api_client.js') }}"></script>
     <script src="{{ url_for('static', filename='js/ui_logic.js') }}"></script>
     <script src="{{ url_for('static', filename='js/app.js') }}"></script>

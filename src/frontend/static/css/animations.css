@@ -8,21 +8,21 @@
     to { transform: translateX(0); }
 }
 
-@keyframes pulse {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.05); }
-    100% { transform: scale(1); }
+@keyframes pulse-soft {
+    0% { box-shadow: 0 0 0 0 rgba(79, 70, 229, 0.4); }
+    70% { box-shadow: 0 0 0 10px rgba(79, 70, 229, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(79, 70, 229, 0); }
 }
 
 .fade-in {
-    animation: fadeIn 0.5s ease forwards;
+    animation: fadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
-.pulse {
-    animation: pulse 2s infinite ease-in-out;
+.pulse-primary {
+    animation: pulse-soft 2s infinite;
 }
 
 /* Transitions */
-.transition-all {
-    transition: all 0.3s ease;
+.transition-base {
+    transition: all var(--transition-base);
 }

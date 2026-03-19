@@ -15,12 +15,18 @@ const UILogic = {
     },
 
     /**
-     * appends a log message to the log container.
+     * appends a log message to the log container with terminal styling.
      */
     addLog(message, containerId = 'log_container') {
         const container = document.getElementById(containerId);
         const logElement = document.createElement('div');
-        logElement.className = 'log-entry fade-in';
+        
+        // Assign color class based on message content
+        let typeClass = 'info';
+        if (message.includes('✅') || message.includes('concluído')) typeClass = 'success';
+        if (message.includes('❌') || message.includes('Erro')) typeClass = 'error';
+        
+        logElement.className = `terminal-line ${typeClass} fade-in`;
         logElement.textContent = message;
         container.appendChild(logElement);
         container.scrollTop = container.scrollHeight;
@@ -39,7 +45,7 @@ const UILogic = {
     },
 
     /**
-     * Appends a new result row to the results table.
+     * Appends a new result row to the results table with SaaS button styles.
      */
     addResult(result, bodyId = 'results_body') {
         const tbody = document.getElementById(bodyId);
@@ -47,9 +53,9 @@ const UILogic = {
         row.className = 'fade-in';
         
         row.innerHTML = `
-            <td><strong>${result.marketplace}</strong></td>
-            <td><a href="${result.link_produto}" target="_blank" style="color: var(--light-blue); font-size: 0.8rem;">🔗 Ver Produto</a></td>
-            <td><a href="${result.link_afiliado}" target="_blank" style="color: var(--accent); font-weight: 700;">💰 Copiar Afiliado</a></td>
+            <td><span style="font-weight:700; color:var(--primary);">${result.marketplace}</span></td>
+            <td><a href="${result.link_produto}" target="_blank" class="table-btn btn-view"><i class="fas fa-external-link-alt"></i> Produto</a></td>
+            <td style="text-align: right;"><a href="${result.link_afiliado}" target="_blank" class="table-btn btn-copy"><i class="fas fa-money-bill-wave"></i> Afiliado</a></td>
         `;
         
         tbody.prepend(row);
