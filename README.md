@@ -18,23 +18,41 @@ pip install -r requirements.txt
 playwright install chromium
 ```
 
-> ⚠️ Isso faz o download do Chromium (~150 MB). Necessário somente para mineração real (sem Modo Demo).
+> ⚠️ Isso faz o download do Chromium (~150 MB). Necessário somente para mineração real (fora do Modo de Teste).
 
 ---
 
 ## ▶️ Como usar
 
+O LinkMineer é um app **Flask**. O ponto de entrada é o `run.py`:
+
 ```bash
-streamlit run app.py
+python run.py
 ```
 
-O app abrirá automaticamente em `http://localhost:8501`
+Depois acesse `http://localhost:5000` no navegador.
+
+### Variáveis de ambiente (opcionais)
+
+Podem ser definidas no terminal ou em um arquivo `.env` na raiz do projeto:
+
+| Variável | Padrão | Descrição |
+|---|---|---|
+| `PORT` | `5000` | Porta do servidor |
+| `PLAYWRIGHT_HEADLESS` | `false` local / `true` no Railway | Roda o Chromium sem abrir janela |
+| `ML_TRACKING_ID` | — | Tracking ID padrão do Mercado Livre |
+| `AMAZON_TAG` | — | Tag de afiliado padrão da Amazon |
+| `SHOPEE_ID` | — | Affiliate ID padrão da Shopee |
+
+### Deploy (Railway)
+
+O `Procfile` executa o `start.sh`, que instala o Chromium do Playwright e inicia o app com `python run.py` na porta definida em `$PORT`. A versão do Python está em `runtime.txt` (3.11).
 
 ---
 
-## 🧪 Modo Demo (sem navegador)
+## 🧪 Modo de Teste (sem navegador)
 
-Ative o toggle **"Modo Demo"** na barra lateral para testar a interface e o download de planilhas **sem abrir o Chrome** e sem precisar de credenciais. Ideal para verificar se tudo está funcionando corretamente antes de usar com uma conta real.
+Marque a opção **"🧪 Modo de Teste"** na barra lateral para testar a interface e o download de planilhas **sem abrir o Chrome** e sem precisar de credenciais. Ideal para verificar se tudo está funcionando corretamente antes de usar com uma conta real.
 
 ---
 
@@ -66,12 +84,10 @@ A planilha gerada contém as colunas:
 
 Disponível para download em **CSV** e **XLSX**.
 
----kk
+---
 
 ## ⚠️ Observações importantes
 
 - Os marketplaces podem bloquear acesso automatizado (captcha, bot detection). Nesses casos, o Chromium abre visivelmente para você resolver o desafio manualmente.
 - Certifique-se de que sua conta de afiliado está ativa em cada marketplace antes de usar.
 - Respeite os Termos de Serviço de cada marketplace ao usar este tool.
-
-update
